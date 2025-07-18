@@ -1,0 +1,51 @@
+<script lang="ts">
+	import '../app.css';
+	import { page } from '$app/stores';
+	import { BookOpen, PenTool, User, Settings, Home, LogOut } from 'lucide-svelte';
+	
+	let { children } = $props();
+</script>
+
+<div class="min-h-screen bg-gray-50">
+	{#if $page.url.pathname !== '/demo/lucia/login' && $page.url.pathname !== '/demo/lucia'}
+		<!-- Navigation Header -->
+		<nav class="bg-white shadow-sm border-b">
+			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div class="flex justify-between h-16">
+					<div class="flex items-center">
+						<a href="/dashboard" class="flex items-center space-x-2">
+							<PenTool class="h-8 w-8 text-blue-600" />
+							<span class="text-xl font-bold text-gray-900">WriterBuddy</span>
+						</a>
+					</div>
+					
+					<div class="flex items-center space-x-4">
+						<a href="/dashboard" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+							<Home class="h-4 w-4" />
+							<span>Dashboard</span>
+						</a>
+						<a href="/projects" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+							<BookOpen class="h-4 w-4" />
+							<span>Projects</span>
+						</a>
+						<a href="/profile" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+							<User class="h-4 w-4" />
+							<span>Profile</span>
+						</a>
+						<form action="/demo/lucia/logout" method="POST">
+							<button type="submit" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+								<LogOut class="h-4 w-4" />
+								<span>Logout</span>
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</nav>
+	{/if}
+
+	<!-- Main Content -->
+	<main class="{$page.url.pathname === '/demo/lucia/login' || $page.url.pathname === '/demo/lucia' ? '' : 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8'}">
+		{@render children()}
+	</main>
+</div>
