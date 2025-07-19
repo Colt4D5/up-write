@@ -84,3 +84,13 @@ export function deleteSessionTokenCookie(event: RequestEvent) {
 		path: '/'
 	});
 }
+
+export async function getUserFromEvent(event: RequestEvent) {
+	const token = event.cookies.get(sessionCookieName);
+	if (!token) {
+		return null;
+	}
+
+	const result = await validateSessionToken(token);
+	return result ? result.user : null;
+}
