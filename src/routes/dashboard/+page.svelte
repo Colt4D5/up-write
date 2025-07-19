@@ -3,6 +3,19 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+	const writingTips = [
+		"<strong>Show, don't tell:</strong> Instead of saying 'She was angry,' describe her clenched fists, the way her voice trembled, or how she slammed the door. Let your readers feel the emotion through actions and details.",
+		"<strong>Use active voice:</strong> Instead of 'The book was written by the author,' say 'The author wrote the book.' Active voice makes your writing more direct and engaging.",
+		"<strong>Vary your sentence structure:</strong> Mix short and long sentences to create rhythm and keep your writing interesting. Avoid repetitive patterns.",
+		"<strong>Read your writing out loud:</strong> Hearing your words can help you catch awkward phrasing, run-on sentences, and other issues that might not be obvious when reading silently.",
+		"<strong>Edit ruthlessly:</strong> After writing, take a break and come back with fresh eyes. Cut unnecessary words, phrases, or even entire sections that don't serve your story or argument.",
+		"<strong>Use strong verbs:</strong> Instead of relying on adverbs, choose strong, specific verbs that convey action and emotion. For example, instead of 'ran quickly,' use 'sprinted' or 'dashed.'",
+		"<strong>Create compelling characters:</strong> Give your characters distinct personalities, motivations, and flaws. Make them relatable and complex to engage your readers.",
+		"<strong>Build tension:</strong> Whether in fiction or non-fiction, create suspense by introducing conflicts, obstacles, or unanswered questions. Keep your readers wanting to know what happens next.",
+		"<strong>Use descriptive language:</strong> Paint vivid pictures with your words. Use sensory details to immerse your readers in the setting, characters, and emotions.",
+		"<strong>Write regularly:</strong> Establish a writing routine to build discipline and improve your skills. Consistent practice helps you develop your voice and style over time."
+	];
+	const randomTip = writingTips[Math.floor(Math.random() * writingTips.length)];
 </script>
 
 <svelte:head>
@@ -164,9 +177,7 @@
 				<div class="flex">
 					<div class="ml-3">
 						<p class="text-sm text-blue-700">
-							<strong>Show, don't tell:</strong> Instead of saying "She was angry," describe her clenched fists, 
-							the way her voice trembled, or how she slammed the door. Let your readers feel the emotion 
-							through actions and details.
+							{@html randomTip}
 						</p>
 					</div>
 				</div>
