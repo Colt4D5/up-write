@@ -206,3 +206,104 @@ export class CharacterService {
 		return await db.delete(character).where(eq(character.id, characterId));
 	}
 }
+
+export class StatisticsService {
+	static async getUserWritingStatistics(userId: string) {
+		try {
+			// Get all user projects
+			const userProjects = await db.select().from(project)
+				.where(eq(project.userId, userId));
+
+			// Calculate total words from all documents in user's projects
+			let totalWordCount = 0;
+			
+			// Get all notebooks for user's projects
+			const notebooks = await db.select()
+				.from(notebook)
+				.innerJoin(project, eq(notebook.projectId, project.id))
+				.where(eq(project.userId, userId));
+
+			// Get word count from all documents in those notebooks
+			for (const nb of notebooks) {
+				const documents = await db.select({ 
+					wordCount: document.wordCount
+				})
+				.from(document)
+				.where(eq(document.notebookId, nb.notebook.id));
+				
+				const notebookWordCount = documents.reduce((sum, doc) => sum + doc.wordCount, 0);
+				totalWordCount += notebookWordCount;
+			}
+
+			// Get writing statistics for time tracking
+			const writingStats = await db.select()
+				.from(writingStatistic)
+				.where(eq(writingStatistic.userId, userId));
+
+			const totalTime = writingStats.reduce((sum, stat) => sum + stat.timeSpent, 0);
+
+			// Calculate words written this week
+			const oneWeekAgo = new Date();
+			oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+			const weekStart = oneWeekAgo.toISOString().split('T')[0];
+
+			const weeklyStats = writingStats.filter(stat => stat.date >= weekStart);
+			const weeklyWords = weeklyStats.reduce((sum, stat) => sum + stat.wordsWritten, 0);
+
+			return {
+				projectCount: userProjects.length,
+				totalWords: totalWordCount,
+				totalTime: Math.round(totalTime / 60), // Convert minutes to hours
+				weeklyWords
+			};
+		} catch (error) {
+			console.error('Error in getUserWritingStatistics:', error);
+			return {
+				projectCount: 0,
+				totalWords: 0,
+				totalTime: 0,
+				weeklyWords: 0
+			};
+		}
+	}
+
+	static async recordWritingSession(userId: string, projectId: string, wordsWritten: number, timeSpent: number) {
+		const today = new Date().toISOString().split('T')[0];
+		
+		// Check if there's already a record for today
+		const [existingStat] = await db.select()
+			.from(writingStatistic)
+			.where(
+				and(
+					eq(writingStatistic.userId, userId),
+					eq(writingStatistic.projectId, projectId),
+					eq(writingStatistic.date, today)
+				)
+			);
+
+		if (existingStat) {
+			// Update existing record
+			return await db.update(writingStatistic)
+				.set({
+					wordsWritten: existingStat.wordsWritten + wordsWritten,
+					timeSpent: existingStat.timeSpent + timeSpent,
+					sessionsCount: existingStat.sessionsCount + 1
+				})
+				.where(eq(writingStatistic.id, existingStat.id))
+				.returning();
+		} else {
+			// Create new record
+			return await db.insert(writingStatistic)
+				.values({
+					id: generateId(),
+					userId,
+					projectId,
+					date: today,
+					wordsWritten,
+					timeSpent,
+					sessionsCount: 1
+				})
+				.returning();
+		}
+	}
+}

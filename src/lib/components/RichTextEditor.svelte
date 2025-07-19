@@ -6,6 +6,7 @@
 	import { TextStyle } from '@tiptap/extension-text-style';
 	import Color from '@tiptap/extension-color';
 	import Highlight from '@tiptap/extension-highlight';
+	import CharacterCount from '@tiptap/extension-character-count';
 	import { 
 		Bold, 
 		Italic, 
@@ -38,10 +39,14 @@
 		class: className = ''
 	}: Props = $props();
 
-	let editor: Editor;
-	let element: HTMLElement;
+	let editor: Editor | null = $state<Editor | null>(null);
+	let element: HTMLElement | null = $state<HTMLElement | null>(null);
 	let showSuggestions = $state(false);
 	let isAnalyzing = $state(false);
+	
+	// Reactive counters that update when editor content changes
+	let characterCount = $state(0);
+	let wordCount = $state(0);
 
 	// Debounced functions
 	const debouncedUpdate = onUpdate ? debounce(onUpdate, 500) : null;
@@ -51,6 +56,9 @@
 			onAnalyze(content);
 		}
 	}, 2000) : null;
+
+	// Track the last content we set to prevent loops
+	let lastSetContent = $state('');
 
 	onMount(() => {
 		editor = new Editor({
@@ -66,9 +74,10 @@
 				Color,
 				Highlight.configure({
 					multicolor: true
-				})
+				}),
+				CharacterCount
 			],
-			content: content,
+			content: content || '', // Ensure content is never undefined
 			editable: !readonly,
 			onTransaction: () => {
 				// Force re-render
@@ -78,7 +87,18 @@
 				const html = editor.getHTML();
 				const text = editor.getText();
 				
-				if (debouncedUpdate) {
+				// Update reactive counters
+				if (editor.storage.characterCount) {
+					characterCount = editor.storage.characterCount.characters();
+					wordCount = editor.storage.characterCount.words();
+				} else {
+					characterCount = text.length;
+					wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+				}
+				
+				// Only call update if content actually changed and it's not from us setting it
+				if (debouncedUpdate && html !== lastSetContent && html !== content) {
+					lastSetContent = html; // Track what we're about to send up
 					debouncedUpdate(html);
 				}
 				
@@ -87,52 +107,73 @@
 				}
 			}
 		});
-	});
 
-	onDestroy(() => {
-		if (editor) {
-			editor.destroy();
+		// Set initial lastSetContent
+		lastSetContent = content || '';
+		
+		// Initialize counters
+		if (editor && editor.storage.characterCount) {
+			characterCount = editor.storage.characterCount.characters();
+			wordCount = editor.storage.characterCount.words();
+		} else if (editor) {
+			const text = editor.getText();
+			characterCount = text.length;
+			wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
 		}
 	});
 
+	onDestroy(() => {
+		if (!editor) return;
+		editor.destroy();
+	});
+
 	function toggleBold() {
+		if (!editor) return;
 		editor.chain().focus().toggleBold().run();
 	}
 
 	function toggleItalic() {
+		if (!editor) return;
 		editor.chain().focus().toggleItalic().run();
 	}
 
 	function toggleUnderline() {
+		if (!editor) return;
 		editor.chain().focus().toggleUnderline().run();
 	}
 
 	function toggleBulletList() {
+		if (!editor) return;
 		editor.chain().focus().toggleBulletList().run();
 	}
 
 	function toggleOrderedList() {
+		if (!editor) return;
 		editor.chain().focus().toggleOrderedList().run();
 	}
 
 	function toggleBlockquote() {
+		if (!editor) return;
 		editor.chain().focus().toggleBlockquote().run();
 	}
 
 	function undo() {
+		if (!editor) return;
 		editor.chain().focus().undo().run();
 	}
 
 	function redo() {
+		if (!editor) return;
 		editor.chain().focus().redo().run();
 	}
 
 	function togglePreview() {
-		// Toggle between edit and preview modes
+		if (!editor) return;
 		editor.setEditable(!editor.isEditable);
 	}
 
 	function analyzeNow() {
+		if (!editor || isAnalyzing) return;
 		if (onAnalyze) {
 			const text = editor.getText();
 			if (text.trim().length > 0) {
@@ -142,10 +183,15 @@
 		}
 	}
 
-	// Update editor content when prop changes
+	// Update editor content when prop changes, but avoid loops
 	$effect(() => {
-		if (editor && content !== editor.getHTML()) {
-			editor.commands.setContent(content);
+		if (editor && content !== undefined && content !== null) {
+			const currentContent = editor.getHTML();
+			// Only update if the content is genuinely different
+			if (content !== currentContent && content !== lastSetContent) {
+				lastSetContent = content;
+				editor.commands.setContent(content, false); // false = don't emit update
+			}
 		}
 	});
 
@@ -164,7 +210,7 @@
 			<div class="flex items-center space-x-1 border-r border-gray-300 pr-2 mr-2">
 				<button
 					type="button"
-					on:click={toggleBold}
+					onclick={toggleBold}
 					class="p-1.5 rounded hover:bg-gray-200 {editor?.isActive('bold') ? 'bg-gray-200' : ''}"
 					title="Bold"
 				>
@@ -172,7 +218,7 @@
 				</button>
 				<button
 					type="button"
-					on:click={toggleItalic}
+					onclick={toggleItalic}
 					class="p-1.5 rounded hover:bg-gray-200 {editor?.isActive('italic') ? 'bg-gray-200' : ''}"
 					title="Italic"
 				>
@@ -180,7 +226,7 @@
 				</button>
 				<button
 					type="button"
-					on:click={toggleUnderline}
+					onclick={toggleUnderline}
 					class="p-1.5 rounded hover:bg-gray-200 {editor?.isActive('underline') ? 'bg-gray-200' : ''}"
 					title="Underline"
 				>
@@ -191,7 +237,7 @@
 			<div class="flex items-center space-x-1 border-r border-gray-300 pr-2 mr-2">
 				<button
 					type="button"
-					on:click={toggleBulletList}
+					onclick={toggleBulletList}
 					class="p-1.5 rounded hover:bg-gray-200 {editor?.isActive('bulletList') ? 'bg-gray-200' : ''}"
 					title="Bullet List"
 				>
@@ -199,7 +245,7 @@
 				</button>
 				<button
 					type="button"
-					on:click={toggleOrderedList}
+					onclick={toggleOrderedList}
 					class="p-1.5 rounded hover:bg-gray-200 {editor?.isActive('orderedList') ? 'bg-gray-200' : ''}"
 					title="Numbered List"
 				>
@@ -207,7 +253,7 @@
 				</button>
 				<button
 					type="button"
-					on:click={toggleBlockquote}
+					onclick={toggleBlockquote}
 					class="p-1.5 rounded hover:bg-gray-200 {editor?.isActive('blockquote') ? 'bg-gray-200' : ''}"
 					title="Quote"
 				>
@@ -218,7 +264,7 @@
 			<div class="flex items-center space-x-1 border-r border-gray-300 pr-2 mr-2">
 				<button
 					type="button"
-					on:click={undo}
+					onclick={undo}
 					class="p-1.5 rounded hover:bg-gray-200"
 					title="Undo"
 					disabled={!editor?.can().undo()}
@@ -227,7 +273,7 @@
 				</button>
 				<button
 					type="button"
-					on:click={redo}
+					onclick={redo}
 					class="p-1.5 rounded hover:bg-gray-200"
 					title="Redo"
 					disabled={!editor?.can().redo()}
@@ -240,7 +286,7 @@
 				<div class="flex items-center space-x-1 ml-auto">
 					<button
 						type="button"
-						on:click={analyzeNow}
+						onclick={analyzeNow}
 						disabled={isAnalyzing}
 						class="flex items-center space-x-1 px-2 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50"
 						title="Analyze Writing"
@@ -268,10 +314,7 @@
 		<!-- Status Bar -->
 		<div class="bg-gray-50 border-t border-gray-200 px-4 py-2 text-xs text-gray-500 flex items-center justify-between">
 			<div>
-				{#if editor}
-					{editor.storage.characterCount?.characters() || 0} characters, 
-					{editor.storage.characterCount?.words() || 0} words
-				{/if}
+				{characterCount} characters, {wordCount} words
 			</div>
 			{#if isAnalyzing}
 				<div class="flex items-center space-x-1 text-blue-600">

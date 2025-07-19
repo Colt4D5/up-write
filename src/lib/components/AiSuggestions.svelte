@@ -144,7 +144,7 @@
 									{#if onAcceptSuggestion && suggestion.suggestedText}
 										<button
 											type="button"
-											on:click={() => onAcceptSuggestion?.(index)}
+											onclick={() => onAcceptSuggestion?.(index)}
 											class="p-1 text-green-600 hover:text-green-800 hover:bg-green-100 rounded"
 											title="Accept suggestion"
 										>
@@ -155,7 +155,7 @@
 									{#if onDismissSuggestion}
 										<button
 											type="button"
-											on:click={() => onDismissSuggestion?.(index)}
+											onclick={() => onDismissSuggestion?.(index)}
 											class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
 											title="Dismiss suggestion"
 										>

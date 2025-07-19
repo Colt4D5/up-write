@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { ProjectService } from '$lib/server/services';
+import { ProjectService, StatisticsService } from '$lib/server/services';
 import { redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
@@ -11,13 +11,8 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 		// Get user's recent projects
 		const recentProjects = await ProjectService.getUserProjects(locals.user.id);
 
-		// Calculate basic stats
-		const stats = {
-			projectCount: recentProjects.length,
-			totalWords: 0, // We'll calculate this properly later
-			totalTime: 0,
-			weeklyWords: 0
-		};
+		// Get comprehensive writing statistics
+		const stats = await StatisticsService.getUserWritingStatistics(locals.user.id);
 
 		return {
 			user: locals.user,

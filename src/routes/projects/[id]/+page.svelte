@@ -54,11 +54,12 @@
 		if (data.notebooks && !selectedDocument) {
 			for (const notebook of data.notebooks) {
 				if (notebook.documents && notebook.documents.length > 0) {
-					selectedDocument = notebook.documents[0];
-					documentContent = selectedDocument.content || '';
+					const firstDoc = notebook.documents[0];
+					selectedDocument = firstDoc;
+					documentContent = firstDoc.content || '';
 					hasUnsavedChanges = false;
 					saveStatus = 'saved';
-					lastSaved = selectedDocument.updatedAt ? new Date(selectedDocument.updatedAt) : null;
+					lastSaved = firstDoc.updatedAt ? new Date(firstDoc.updatedAt) : null;
 					break;
 				}
 			}
@@ -175,13 +176,13 @@
 			if (response.ok) {
 				const updatedDocument = await response.json();
 				
-				// Update the selected document with the response
+				// Update the selected document with the response (including new wordCount)
 				selectedDocument = { ...selectedDocument, ...updatedDocument };
 				hasUnsavedChanges = false;
 				lastSaved = new Date();
 				saveStatus = 'saved';
 				
-				// Update the document in the notebooks data
+				// Update the document in the notebooks data without triggering reactivity loops
 				if (data.notebooks) {
 					for (const notebook of data.notebooks) {
 						if (notebook.documents) {
@@ -237,42 +238,46 @@
 	}
 
 	function selectDocument(document: any) {
-		if (selectedDocument?.id !== document.id) {
-			selectedDocument = document;
-			documentContent = document.content || '';
-			aiAnalysis = null;
-			hasUnsavedChanges = false;
-			saveStatus = 'saved';
-			lastSaved = document.updatedAt ? new Date(document.updatedAt) : null;
-			
-			// Clear any pending autosave
-			if (autosaveTimeout) {
-				clearTimeout(autosaveTimeout);
-				autosaveTimeout = null;
-			}
+		// Only change if it's actually a different document
+		if (selectedDocument?.id === document.id) return;
+		
+		// Clear any pending autosave for the previous document
+		if (autosaveTimeout) {
+			clearTimeout(autosaveTimeout);
+			autosaveTimeout = null;
 		}
+		
+		// Update selected document and content
+		selectedDocument = document;
+		documentContent = document.content || '';
+		aiAnalysis = null;
+		hasUnsavedChanges = false;
+		saveStatus = 'saved';
+		lastSaved = document.updatedAt ? new Date(document.updatedAt) : null;
 	}
 
 	async function handleContentUpdate(content: string) {
-		const oldContent = documentContent;
+		// Only proceed if content actually changed and we have a selected document
+		if (content === documentContent || !selectedDocument) return;
+		
 		documentContent = content;
 		
-		// Mark as having unsaved changes if content actually changed
-		if (content !== oldContent && selectedDocument) {
-			hasUnsavedChanges = true;
-			saveStatus = 'unsaved';
-			selectedDocument.content = content;
-			selectedDocument.wordCount = countWords(content);
-			
-			// Clear existing autosave timeout
-			if (autosaveTimeout) {
-				clearTimeout(autosaveTimeout);
-			}
-			
-			// Set new autosave timeout
-			if (autosaveEnabled) {
-				autosaveTimeout = setTimeout(triggerAutosave, AUTOSAVE_DELAY);
-			}
+		// Mark as having unsaved changes
+		hasUnsavedChanges = true;
+		saveStatus = 'unsaved';
+		
+		// Update the document's local word count for display (don't modify the original object)
+		const wordCount = countWords(content);
+		selectedDocument = { ...selectedDocument, wordCount };
+		
+		// Clear existing autosave timeout
+		if (autosaveTimeout) {
+			clearTimeout(autosaveTimeout);
+		}
+		
+		// Set new autosave timeout
+		if (autosaveEnabled) {
+			autosaveTimeout = setTimeout(triggerAutosave, AUTOSAVE_DELAY);
 		}
 	}
 

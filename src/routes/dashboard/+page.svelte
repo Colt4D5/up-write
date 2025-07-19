@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { BookOpen, PlusCircle, BarChart3, Clock, Target, TrendingUp } from 'lucide-svelte';
+	import { formatWordCount } from '$lib/utils';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -58,7 +59,10 @@
 				</div>
 				<div class="ml-4">
 					<p class="text-sm font-medium text-gray-600">Total Words</p>
-					<p class="text-2xl font-semibold text-gray-900">{data.stats?.totalWords?.toLocaleString() || 0}</p>
+					<p class="text-2xl font-semibold text-gray-900">{formatWordCount(data.stats?.totalWords || 0)}</p>
+					{#if data.stats?.totalWords}
+						<p class="text-xs text-gray-500">{data.stats.totalWords.toLocaleString()} words</p>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -82,7 +86,10 @@
 				</div>
 				<div class="ml-4">
 					<p class="text-sm font-medium text-gray-600">This Week</p>
-					<p class="text-2xl font-semibold text-gray-900">{data.stats?.weeklyWords?.toLocaleString() || 0}</p>
+					<p class="text-2xl font-semibold text-gray-900">{formatWordCount(data.stats?.weeklyWords || 0)}</p>
+					{#if data.stats?.weeklyWords}
+						<p class="text-xs text-gray-500">{data.stats.weeklyWords.toLocaleString()} words</p>
+					{/if}
 				</div>
 			</div>
 		</div>
