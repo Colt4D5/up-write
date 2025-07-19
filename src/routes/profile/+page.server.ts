@@ -4,6 +4,9 @@ import { hash, verify } from '@node-rs/argon2';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
+import { writeFileSync, existsSync, mkdirSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { randomUUID } from 'crypto';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -18,6 +21,7 @@ export const load: PageServerLoad = async (event) => {
 			email: table.user.email,
 			displayName: table.user.displayName,
 			age: table.user.age,
+			profileImage: table.user.profileImage,
 			createdAt: table.user.createdAt
 		})
 		.from(table.user)
@@ -175,6 +179,84 @@ export const actions: Actions = {
 		} catch (error) {
 			console.error('Password change error:', error);
 			return fail(500, { message: 'An error occurred while changing your password' });
+		}
+	},
+
+	uploadAvatar: async (event) => {
+		if (!event.locals.user) {
+			return fail(401, { message: 'Not logged in' });
+		}
+
+		const formData = await event.request.formData();
+		const file = formData.get('avatar') as File;
+
+		if (!file || file.size === 0) {
+			return fail(400, { message: 'Please select an image file' });
+		}
+
+		// Validate file type
+		const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+		if (!allowedTypes.includes(file.type)) {
+			return fail(400, { message: 'Please upload a valid image file (JPEG, PNG, GIF, or WebP)' });
+		}
+
+		// Validate file size (max 5MB)
+		const maxSize = 5 * 1024 * 1024;
+		if (file.size > maxSize) {
+			return fail(400, { message: 'File size must be less than 5MB' });
+		}
+
+		try {
+			// Ensure upload directory exists
+			const uploadDir = join(process.cwd(), 'static', 'uploads', 'avatars');
+			if (!existsSync(uploadDir)) {
+				mkdirSync(uploadDir, { recursive: true });
+			}
+
+			// Generate unique filename
+			const fileExtension = file.name.split('.').pop();
+			const fileName = `${randomUUID()}.${fileExtension}`;
+			const filePath = join(uploadDir, fileName);
+
+			// Convert file to buffer and save
+			const arrayBuffer = await file.arrayBuffer();
+			const buffer = new Uint8Array(arrayBuffer);
+			writeFileSync(filePath, buffer);
+
+			// Get current profile image to delete old one
+			const [currentUser] = await db
+				.select({ profileImage: table.user.profileImage })
+				.from(table.user)
+				.where(eq(table.user.id, event.locals.user.id));
+
+			// Update user profile image in database
+			const profileImagePath = `/uploads/avatars/${fileName}`;
+			await db
+				.update(table.user)
+				.set({
+					profileImage: profileImagePath,
+					updatedAt: new Date()
+				})
+				.where(eq(table.user.id, event.locals.user.id));
+
+			// Delete old profile image if it exists and is not the default
+			if (currentUser?.profileImage && !currentUser.profileImage.includes('default-avatar')) {
+				try {
+					const oldFilePath = join(process.cwd(), 'static', currentUser.profileImage);
+					if (existsSync(oldFilePath)) {
+						unlinkSync(oldFilePath);
+					}
+				} catch (error) {
+					console.error('Error deleting old profile image:', error);
+					// Don't fail the request if old image deletion fails
+				}
+			}
+
+			return { success: true, message: 'Profile image updated successfully' };
+
+		} catch (error) {
+			console.error('Avatar upload error:', error);
+			return fail(500, { message: 'An error occurred while uploading your profile image' });
 		}
 	}
 };

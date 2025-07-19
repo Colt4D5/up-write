@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { User, Mail, Hash, Calendar, Save, AlertCircle, CheckCircle, Lock, Eye, EyeOff } from 'lucide-svelte';
+	import { User, Mail, Hash, Calendar, Save, AlertCircle, CheckCircle, Lock, Eye, EyeOff, Camera } from 'lucide-svelte';
 	import type { PageServerData, ActionData } from './$types';
 
 	let { data, form }: { data: PageServerData; form: ActionData & { username?: string; displayName?: string; email?: string; age?: number } } = $props();
@@ -10,6 +10,12 @@
 	let showCurrentPassword = $state(false);
 	let showNewPassword = $state(false);
 	let showConfirmPassword = $state(false);
+	let isUploadingAvatar = $state(false);
+
+	// Get profile image URL with fallback to default
+	const getProfileImageUrl = (profileImage: string | null) => {
+		return profileImage || '/default-avatar.svg';
+	};
 </script>
 
 <svelte:head>
@@ -35,6 +41,79 @@
 			<span class="text-red-800">{form.message}</span>
 		</div>
 	{/if}
+
+	<!-- Profile Avatar Section -->
+	<div class="bg-white shadow-lg rounded-lg mb-8">
+		<div class="p-6 border-b border-gray-200">
+			<h2 class="text-xl font-semibold text-gray-900">Profile Picture</h2>
+			<p class="text-sm text-gray-600 mt-1">Upload a profile picture to personalize your account.</p>
+		</div>
+		
+		<div class="p-6">
+			<div class="flex items-center space-x-6">
+				<!-- Current Avatar -->
+				<div class="relative">
+					<img 
+						src={getProfileImageUrl(data.user.profileImage)} 
+						alt="Profile" 
+						class="h-20 w-20 rounded-full object-cover ring-4 ring-gray-100"
+					/>
+				</div>
+				
+				<!-- Upload Form -->
+				<form 
+					method="POST" 
+					action="?/uploadAvatar" 
+					enctype="multipart/form-data"
+					use:enhance={() => {
+						isUploadingAvatar = true;
+						return async ({ update }) => {
+							await update();
+							isUploadingAvatar = false;
+						};
+					}}
+					class="flex-1"
+				>
+					<div class="flex flex-col space-y-3">
+						<div class="flex items-center space-x-3">
+							<label for="avatar" class="cursor-pointer">
+								<input
+									type="file"
+									id="avatar"
+									name="avatar"
+									accept="image/*"
+									class="sr-only"
+									disabled={isUploadingAvatar}
+								/>
+								<span class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+									<Camera class="h-4 w-4 mr-2" />
+									Choose Image
+								</span>
+							</label>
+							
+							<button
+								type="submit"
+								disabled={isUploadingAvatar}
+								class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{#if isUploadingAvatar}
+									<div class="animate-spin -ml-1 mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+									Uploading...
+								{:else}
+									<Save class="h-4 w-4 mr-2" />
+									Upload
+								{/if}
+							</button>
+						</div>
+						
+						<p class="text-xs text-gray-500">
+							Supported formats: JPEG, PNG, GIF, WebP. Maximum size: 5MB.
+						</p>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 
 	<div class="bg-white shadow-lg rounded-lg">
 		<div class="p-6 border-b border-gray-200">

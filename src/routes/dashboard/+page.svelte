@@ -4,6 +4,12 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	// Get profile image URL with fallback to default
+	const getProfileImageUrl = (profileImage: string | null) => {
+		return profileImage || '/default-avatar.svg';
+	};
+
 	const writingTips = [
 		"<strong>Show, don't tell:</strong> Instead of saying 'She was angry,' describe her clenched fists, the way her voice trembled, or how she slammed the door. Let your readers feel the emotion through actions and details.",
 		"<strong>Use active voice:</strong> Instead of 'The book was written by the author,' say 'The author wrote the book.' Active voice makes your writing more direct and engaging.",
@@ -27,9 +33,16 @@
 	<!-- Welcome Header -->
 	<div class="bg-white rounded-lg shadow p-6">
 		<div class="flex items-center justify-between">
-			<div>
-				<h1 class="text-2xl font-bold text-gray-900">Welcome back, {data.user?.username}!</h1>
-				<p class="text-gray-600 mt-1">Ready to continue your writing journey?</p>
+			<div class="flex items-center space-x-4">
+				<img 
+					src={getProfileImageUrl(data.user?.profileImage)} 
+					alt="Profile" 
+					class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200"
+				/>
+				<div>
+					<h1 class="text-2xl font-bold text-gray-900">Welcome back, {data.user?.username}!</h1>
+					<p class="text-gray-600 mt-1">Ready to continue your writing journey?</p>
+				</div>
 			</div>
 			<a href="/projects/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
 				<PlusCircle class="h-4 w-4" />

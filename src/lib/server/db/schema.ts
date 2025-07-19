@@ -7,6 +7,7 @@ export const user = sqliteTable('user', {
 	passwordHash: text('password_hash').notNull(),
 	email: text('email').unique(),
 	displayName: text('display_name'),
+	profileImage: text('profile_image'),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$default(() => new Date()),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$default(() => new Date())
 });

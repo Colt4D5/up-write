@@ -4,7 +4,12 @@
 	import { BookOpen, PenTool, User, Settings, Home, LogOut } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
 	
-	let { children } = $props();
+	let { children, data } = $props();
+
+	// Get profile image URL with fallback to default
+	const getProfileImageUrl = (profileImage: string | null) => {
+		return profileImage || '/default-avatar.svg';
+	};
 </script>
 
 <div class="min-h-screen bg-gray-50">
@@ -30,7 +35,15 @@
 							<span>Projects</span>
 						</a>
 						<a href="/profile" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
-							<User class="h-4 w-4" />
+							{#if data?.user?.profileImage}
+								<img 
+									src={getProfileImageUrl(data.user.profileImage)} 
+									alt="Profile" 
+									class="h-6 w-6 rounded-full object-cover"
+								/>
+							{:else}
+								<User class="h-4 w-4" />
+							{/if}
 							<span>Profile</span>
 						</a>
 						<form method="POST" action="/logout" use:enhance>
