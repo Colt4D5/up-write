@@ -4,7 +4,7 @@ import { redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
 	if (!locals.user) {
-		throw redirect(302, '/demo/lucia/login');
+		throw redirect(302, '/login');
 	}
 
 	try {

@@ -2,12 +2,13 @@
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { BookOpen, PenTool, User, Settings, Home, LogOut } from 'lucide-svelte';
+	import { enhance } from '$app/forms';
 	
 	let { children } = $props();
 </script>
 
 <div class="min-h-screen bg-gray-50">
-	{#if $page.url.pathname !== '/demo/lucia/login' && $page.url.pathname !== '/demo/lucia'}
+	{#if $page.url.pathname !== '/login' && $page.url.pathname !== '/' && $page.url.pathname !== '/logout'}
 		<!-- Navigation Header -->
 		<nav class="bg-white shadow-sm border-b">
 			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,8 +33,8 @@
 							<User class="h-4 w-4" />
 							<span>Profile</span>
 						</a>
-						<form action="/demo/lucia/logout" method="POST">
-							<button type="submit" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+						<form method="POST" action="/logout" use:enhance>
+							<button type="submit" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 cursor-pointer">
 								<LogOut class="h-4 w-4" />
 								<span>Logout</span>
 							</button>
@@ -45,7 +46,7 @@
 	{/if}
 
 	<!-- Main Content -->
-	<main class="{$page.url.pathname === '/demo/lucia/login' || $page.url.pathname === '/demo/lucia' ? '' : 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8'}">
+	<main class="{$page.url.pathname === '/login' || $page.url.pathname === '' || $page.url.pathname === '/logout' ? '' : 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8'}">
 		{@render children()}
 	</main>
 </div>

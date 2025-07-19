@@ -3,7 +3,7 @@ import { redirect, error } from '@sveltejs/kit';
 
 export const load = async ({ params, locals }) => {
 	if (!locals.user) {
-		throw redirect(302, '/demo/lucia/login');
+		throw redirect(302, '/login');
 	}
 
 	const projectId = params.id;

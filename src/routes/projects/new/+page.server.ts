@@ -4,7 +4,7 @@ import { ProjectService } from '$lib/server/services';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
-		throw redirect(302, '/demo/lucia/login');
+		throw redirect(302, '/login');
 	}
 	return {};
 };
@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
 		if (!locals.user) {
-			throw redirect(302, '/demo/lucia/login');
+			throw redirect(302, '/login');
 		}
 
 		const data = await request.formData();

@@ -81,7 +81,7 @@ A comprehensive writing application for authors to organize and write books with
 
 ### First Time Setup
 
-1. **Create an account**: Navigate to `/demo/lucia/login` and create a new account
+1. **Create an account**: Navigate to `/login` and create a new account
 2. **Create your first project**: Click "New Project" and fill in the details
 3. **Start writing**: Select a document from the sidebar and begin writing
 4. **Get AI suggestions**: The AI assistant will automatically analyze your text and provide suggestions
