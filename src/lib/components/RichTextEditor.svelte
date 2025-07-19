@@ -190,7 +190,7 @@
 			// Only update if the content is genuinely different
 			if (content !== currentContent && content !== lastSetContent) {
 				lastSetContent = content;
-				editor.commands.setContent(content, false); // false = don't emit update
+				editor.commands.setContent(content, { emitUpdate: false }); // don't emit update
 			}
 		}
 	});

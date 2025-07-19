@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { User, Mail, Hash, Calendar, Save, AlertCircle, CheckCircle, Lock, Eye, EyeOff, Camera } from 'lucide-svelte';
+	import { User, Mail, Hash, Calendar, Save, AlertCircle, CheckCircle, Lock, Eye, EyeOff, Camera, Cake } from 'lucide-svelte';
+	import { calculateAge, formatBirthday } from '$lib/utils';
 	import type { PageServerData, ActionData } from './$types';
 
-	let { data, form }: { data: PageServerData; form: ActionData & { username?: string; displayName?: string; email?: string; age?: number } } = $props();
+	let { data, form }: { 
+		data: any; 
+		form: any;
+	} = $props();
 
 	let isSubmitting = $state(false);
 	let isChangingPassword = $state(false);
@@ -16,6 +20,20 @@
 	const getProfileImageUrl = (profileImage: string | null) => {
 		return profileImage || '/default-avatar.svg';
 	};
+
+	// Create reactive form values that properly handle successful submissions
+	let formUsername = $derived(
+		(form && !form.success && form.username !== undefined) ? form.username : data?.user?.username ?? ''
+	);
+	let formDisplayName = $derived(
+		(form && !form.success && form.displayName !== undefined) ? form.displayName : data?.user?.displayName ?? ''
+	);
+	let formEmail = $derived(
+		(form && !form.success && form.email !== undefined) ? form.email : data?.user?.email ?? ''
+	);
+	let formBirthday = $derived(
+		(form && !form.success && form.birthday !== undefined) ? form.birthday : data?.user?.birthday ?? ''
+	);
 </script>
 
 <svelte:head>
@@ -54,7 +72,7 @@
 				<!-- Current Avatar -->
 				<div class="relative">
 					<img 
-						src={getProfileImageUrl(data.user.profileImage)} 
+						src={getProfileImageUrl(data?.user?.profileImage || null)} 
 						alt="Profile" 
 						class="h-20 w-20 rounded-full object-cover ring-4 ring-gray-100"
 					/>
@@ -144,7 +162,7 @@
 						type="text"
 						id="username"
 						name="username"
-						value={form?.username !== undefined ? form.username : data.user.username}
+						value={formUsername}
 						required
 						class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
 						placeholder="Enter your username"
@@ -162,7 +180,7 @@
 						type="text"
 						id="displayName"
 						name="displayName"
-						value={form?.displayName ?? data.user.displayName ?? ''}
+						value={formDisplayName}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
 						placeholder="Enter your display name"
 					/>
@@ -179,30 +197,40 @@
 						type="email"
 						id="email"
 						name="email"
-						value={form?.email ?? data.user.email ?? ''}
+						value={formEmail}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
 						placeholder="Enter your email address"
 					/>
 					<p class="text-xs text-gray-500 mt-1">Optional - for account recovery and notifications</p>
 				</div>
 
-				<!-- Age -->
+				<!-- Birthday -->
 				<div>
-					<label for="age" class="block text-sm font-medium text-gray-700 mb-2">
-						<Hash class="h-4 w-4 inline mr-1" />
-						Age
+					<label for="birthday" class="block text-sm font-medium text-gray-700 mb-2">
+						<Cake class="h-4 w-4 inline mr-1" />
+						Birthday
 					</label>
 					<input
-						type="number"
-						id="age"
-						name="age"
-						value={form?.age ?? data.user.age ?? ''}
-						min="1"
-						max="150"
+						type="date"
+						id="birthday"
+						name="birthday"
+						value={formBirthday}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-						placeholder="Enter your age"
 					/>
-					<p class="text-xs text-gray-500 mt-1">Optional - helps us provide age-appropriate content</p>
+					<div class="text-xs text-gray-500 mt-1 space-y-1">
+						<p>Optional - helps us provide age-appropriate content</p>
+						{#if data?.user?.birthday}
+							{@const age = calculateAge(data.user.birthday)}
+							{#if age !== null}
+								<p class="text-gray-700">
+									<strong>Current age:</strong> {age} years old
+									{#if formatBirthday(data.user.birthday)}
+										(Born: {formatBirthday(data.user.birthday)})
+									{/if}
+								</p>
+							{/if}
+						{/if}
+					</div>
 				</div>
 			</div>
 
@@ -216,7 +244,7 @@
 							User ID
 						</label>
 						<div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600 font-mono text-sm">
-							{data.user.id}
+							{data?.user?.id || 'N/A'}
 						</div>
 					</div>
 					<div>
@@ -225,11 +253,11 @@
 							Member Since
 						</label>
 						<div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
-							{new Date(data.user.createdAt).toLocaleDateString('en-US', { 
+							{data?.user?.createdAt ? new Date(data.user.createdAt).toLocaleDateString('en-US', { 
 								year: 'numeric', 
 								month: 'long', 
 								day: 'numeric' 
-							})}
+							}) : 'N/A'}
 						</div>
 					</div>
 				</div>

@@ -20,7 +20,7 @@ export const load: PageServerLoad = async (event) => {
 			username: table.user.username,
 			email: table.user.email,
 			displayName: table.user.displayName,
-			age: table.user.age,
+			birthday: table.user.birthday,
 			profileImage: table.user.profileImage,
 			createdAt: table.user.createdAt
 		})
@@ -42,30 +42,48 @@ export const actions: Actions = {
 		const username = formData.get('username')?.toString();
 		const email = formData.get('email')?.toString();
 		const displayName = formData.get('displayName')?.toString();
-		const ageString = formData.get('age')?.toString();
+		const birthdayString = formData.get('birthday')?.toString();
 
 		// Validation
 		if (!username || username.length < 3 || username.length > 31) {
-			return fail(400, { message: 'Username must be between 3 and 31 characters', username, email, displayName, age: ageString });
+			return fail(400, { message: 'Username must be between 3 and 31 characters', username, email, displayName, birthday: birthdayString });
 		}
 
 		if (!/^[a-z0-9_-]+$/.test(username)) {
-			return fail(400, { message: 'Username can only contain lowercase letters, numbers, underscores, and hyphens', username, email, displayName, age: ageString });
+			return fail(400, { message: 'Username can only contain lowercase letters, numbers, underscores, and hyphens', username, email, displayName, birthday: birthdayString });
 		}
 
 		if (email && email.length > 0) {
 			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 			if (!emailRegex.test(email)) {
-				return fail(400, { message: 'Please enter a valid email address', username, email, displayName, age: ageString });
+				return fail(400, { message: 'Please enter a valid email address', username, email, displayName, birthday: birthdayString });
 			}
 		}
 
-		let age: number | null = null;
-		if (ageString && ageString.length > 0) {
-			age = parseInt(ageString);
-			if (isNaN(age) || age < 1 || age > 150) {
-				return fail(400, { message: 'Age must be a number between 1 and 150', username, email, displayName, age: ageString });
+		let birthday: string | null = null;
+		if (birthdayString && birthdayString.length > 0) {
+			// Validate birthday format (YYYY-MM-DD)
+			const birthdayDate = new Date(birthdayString);
+			const today = new Date();
+			
+			if (isNaN(birthdayDate.getTime())) {
+				return fail(400, { message: 'Please enter a valid date', username, email, displayName, birthday: birthdayString });
 			}
+			
+			// Check if birthday is not in the future
+			if (birthdayDate > today) {
+				return fail(400, { message: 'Birthday cannot be in the future', username, email, displayName, birthday: birthdayString });
+			}
+			
+			// Check if birthday is reasonable (not more than 150 years ago)
+			const minDate = new Date();
+			minDate.setFullYear(today.getFullYear() - 150);
+			
+			if (birthdayDate < minDate) {
+				return fail(400, { message: 'Please enter a valid birthday', username, email, displayName, birthday: birthdayString });
+			}
+			
+			birthday = birthdayString;
 		}
 
 		try {
@@ -76,7 +94,7 @@ export const actions: Actions = {
 				.where(eq(table.user.username, username));
 
 			if (existingUser.length > 0 && existingUser[0].id !== event.locals.user.id) {
-				return fail(400, { message: 'Username is already taken', username, email, displayName, age: ageString });
+				return fail(400, { message: 'Username is already taken', username, email, displayName, birthday: birthdayString });
 			}
 
 			// Check if email is taken by another user (if provided)
@@ -87,7 +105,7 @@ export const actions: Actions = {
 					.where(eq(table.user.email, email));
 
 				if (existingEmail.length > 0 && existingEmail[0].id !== event.locals.user.id) {
-					return fail(400, { message: 'Email is already taken', username, email, displayName, age: ageString });
+					return fail(400, { message: 'Email is already taken', username, email, displayName, birthday: birthdayString });
 				}
 			}
 
@@ -98,7 +116,7 @@ export const actions: Actions = {
 					username,
 					email: email || null,
 					displayName: displayName || null,
-					age,
+					birthday,
 					updatedAt: new Date()
 				})
 				.where(eq(table.user.id, event.locals.user.id));
@@ -107,7 +125,7 @@ export const actions: Actions = {
 
 		} catch (error) {
 			console.error('Profile update error:', error);
-			return fail(500, { message: 'An error occurred while updating your profile', username, email, displayName, age: ageString });
+			return fail(500, { message: 'An error occurred while updating your profile', username, email, displayName, birthday: birthdayString });
 		}
 	},
 

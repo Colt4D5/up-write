@@ -73,3 +73,32 @@ export function getSuggestionSeverityColor(severity: string): string {
 			return 'text-gray-500';
 	}
 }
+
+export function calculateAge(birthday: string): number | null {
+	if (!birthday) return null;
+	
+	const birthDate = new Date(birthday);
+	const today = new Date();
+	
+	// Check if the birthday is valid
+	if (isNaN(birthDate.getTime())) return null;
+	
+	let age = today.getFullYear() - birthDate.getFullYear();
+	const monthDiff = today.getMonth() - birthDate.getMonth();
+	
+	if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+		age--;
+	}
+	
+	return age;
+}
+
+export function formatBirthday(birthday: string): string {
+	if (!birthday) return '';
+	const date = new Date(birthday);
+	return date.toLocaleDateString('en-US', { 
+		year: 'numeric', 
+		month: 'long', 
+		day: 'numeric' 
+	});
+}
