@@ -39,8 +39,14 @@ export const actions: Actions = {
 				targetWordCount: targetWordCount ? parseInt(targetWordCount) : undefined
 			});
 
+			// Redirect after successful creation
 			throw redirect(302, `/projects/${project.id}`);
 		} catch (error) {
+			// Re-throw SvelteKit redirects - they should not be caught as errors
+			if (error && typeof error === 'object' && 'status' in error && 'location' in error) {
+				throw error;
+			}
+			
 			console.error('Project creation error:', error);
 			return fail(500, {
 				error: 'Failed to create project',

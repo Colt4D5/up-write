@@ -40,6 +40,45 @@ export class ProjectService {
 	}
 
 	static async deleteProject(projectId: string, userId: string) {
+		// First, verify the project belongs to the user
+		const [projectToDelete] = await db.select().from(project).where(
+			and(eq(project.id, projectId), eq(project.userId, userId))
+		);
+		
+		if (!projectToDelete) {
+			throw new Error('Project not found');
+		}
+
+		// Delete all related data in the correct order to avoid foreign key constraint issues
+		
+		// 1. Get all notebooks for this project
+		const projectNotebooks = await db.select().from(notebook)
+			.where(eq(notebook.projectId, projectId));
+		
+		// 2. For each notebook, delete all AI suggestions for its documents
+		for (const nb of projectNotebooks) {
+			const notebookDocuments = await db.select().from(document)
+				.where(eq(document.notebookId, nb.id));
+			
+			for (const doc of notebookDocuments) {
+				// Delete AI suggestions for this document
+				await db.delete(aiSuggestion).where(eq(aiSuggestion.documentId, doc.id));
+			}
+			
+			// Delete all documents in this notebook
+			await db.delete(document).where(eq(document.notebookId, nb.id));
+		}
+		
+		// 3. Delete all notebooks for this project
+		await db.delete(notebook).where(eq(notebook.projectId, projectId));
+		
+		// 4. Delete all characters for this project
+		await db.delete(character).where(eq(character.projectId, projectId));
+		
+		// 5. Delete all writing statistics for this project
+		await db.delete(writingStatistic).where(eq(writingStatistic.projectId, projectId));
+		
+		// 6. Finally, delete the project itself
 		return await db.delete(project).where(
 			and(eq(project.id, projectId), eq(project.userId, userId))
 		);

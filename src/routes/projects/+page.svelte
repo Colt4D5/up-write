@@ -1,10 +1,88 @@
 <script lang="ts">
-	import { PlusCircle, BookOpen, Calendar, Target, MoreVertical } from 'lucide-svelte';
+	import { PlusCircle, BookOpen, Calendar, Target, MoreVertical, Edit, Trash2, Settings, AlertTriangle } from 'lucide-svelte';
 	import { formatDate, getProjectStatusColor } from '$lib/utils';
+	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+	
+	let openMenuId = $state<string | null>(null);
+	let deleteConfirmation = $state<{ isOpen: boolean; projectId: string; projectTitle: string }>({
+		isOpen: false,
+		projectId: '',
+		projectTitle: ''
+	});
+	let isDeleting = $state(false);
+
+	function toggleMenu(projectId: string) {
+		openMenuId = openMenuId === projectId ? null : projectId;
+	}
+
+	function closeMenu() {
+		openMenuId = null;
+	}
+
+	function handleDeleteProject(projectId: string, projectTitle: string) {
+		deleteConfirmation = {
+			isOpen: true,
+			projectId,
+			projectTitle
+		};
+		closeMenu();
+	}
+
+	function closeDeleteConfirmation() {
+		deleteConfirmation.isOpen = false;
+		deleteConfirmation.projectId = '';
+		deleteConfirmation.projectTitle = '';
+	}
+
+	async function confirmDeleteProject() {
+		if (!deleteConfirmation.projectId) return;
+		
+		isDeleting = true;
+		try {
+			const response = await fetch('/api/projects/delete', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ projectId: deleteConfirmation.projectId })
+			});
+
+			if (response.ok) {
+				// Refresh the projects list
+				await invalidateAll();
+				closeDeleteConfirmation();
+			} else {
+				const error = await response.json();
+				alert('Failed to delete project: ' + (error.message || 'Unknown error'));
+			}
+		} catch (error) {
+			console.error('Delete project error:', error);
+			alert('Failed to delete project. Please try again.');
+		} finally {
+			isDeleting = false;
+		}
+	}
+
+	// Close menu when clicking outside
+	function handleClickOutside(event: MouseEvent) {
+		const target = event.target as Element;
+		if (!target.closest('.dropdown-menu') && !target.closest('.dropdown-button')) {
+			closeMenu();
+		}
+	}
+
+	// Handle escape key to close modal
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape' && deleteConfirmation.isOpen) {
+			closeDeleteConfirmation();
+		}
+	}
 </script>
+
+<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
 <svelte:head>
 	<title>Projects - WriterBuddy</title>
@@ -36,9 +114,43 @@
 									{project.status}
 								</span>
 							</div>
-							<button class="text-gray-400 hover:text-gray-600">
-								<MoreVertical class="h-4 w-4" />
-							</button>
+							<div class="relative">
+								<button 
+									class="dropdown-button text-gray-400 hover:text-gray-600 p-1 rounded"
+									onclick={() => toggleMenu(project.id)}
+								>
+									<MoreVertical class="h-4 w-4" />
+								</button>
+								
+								{#if openMenuId === project.id}
+									<div class="dropdown-menu absolute right-0 top-8 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-10">
+										<a 
+											href="/projects/{project.id}/edit" 
+											class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+											onclick={closeMenu}
+										>
+											<Edit class="h-4 w-4 mr-2" />
+											Edit Project
+										</a>
+										<a 
+											href="/projects/{project.id}/settings" 
+											class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+											onclick={closeMenu}
+										>
+											<Settings class="h-4 w-4 mr-2" />
+											Project Settings
+										</a>
+										<hr class="my-1 border-gray-200" />
+										<button 
+											class="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+											onclick={() => handleDeleteProject(project.id, project.title)}
+										>
+											<Trash2 class="h-4 w-4 mr-2" />
+											Delete Project
+										</button>
+									</div>
+								{/if}
+							</div>
 						</div>
 
 						<h3 class="text-lg font-semibold text-gray-900 mb-2">{project.title}</h3>
@@ -96,3 +208,43 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Delete Confirmation Modal -->
+{#if deleteConfirmation.isOpen}
+	<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+		<div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+			<div class="p-6">
+				<div class="flex items-center space-x-3 mb-4">
+					<div class="flex-shrink-0">
+						<AlertTriangle class="h-6 w-6 text-red-600" />
+					</div>
+					<div>
+						<h3 class="text-lg font-medium text-gray-900">Delete Project</h3>
+					</div>
+				</div>
+				
+				<p class="text-sm text-gray-600 mb-6">
+					Are you sure you want to delete "<span class="font-medium">{deleteConfirmation.projectTitle}</span>"? 
+					This action cannot be undone and will permanently remove the project and all its associated data.
+				</p>
+				
+				<div class="flex items-center justify-end space-x-3">
+					<button 
+						class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+						onclick={closeDeleteConfirmation}
+						disabled={isDeleting}
+					>
+						Cancel
+					</button>
+					<button 
+						class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+						onclick={confirmDeleteProject}
+						disabled={isDeleting}
+					>
+						{isDeleting ? 'Deleting...' : 'Delete Project'}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
