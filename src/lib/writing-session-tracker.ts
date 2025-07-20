@@ -5,6 +5,7 @@
 export class WritingSessionTracker {
 	private projectId: string;
 	private startTime: number = 0;
+	private startWordCount: number = 0;
 	private lastWordCount: number = 0;
 	private isActive: boolean = false;
 	private sessionTimeout: number | null = null;
@@ -26,6 +27,7 @@ export class WritingSessionTracker {
 		if (this.isActive) return;
 		
 		this.startTime = Date.now();
+		this.startWordCount = initialWordCount;
 		this.lastWordCount = initialWordCount;
 		this.isActive = true;
 		
@@ -80,7 +82,7 @@ export class WritingSessionTracker {
 		if (!this.isActive) return;
 
 		const timeSpentMinutes = Math.round((Date.now() - this.startTime) / 60000);
-		const wordsWritten = Math.max(0, this.lastWordCount); // Ensure non-negative
+		const wordsWritten = Math.max(0, this.lastWordCount - this.startWordCount); // Calculate incremental words
 
 		if (timeSpentMinutes < 1) return; // Don't save sessions less than 1 minute
 

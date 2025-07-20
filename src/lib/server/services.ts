@@ -250,6 +250,15 @@ export class StatisticsService {
 			const weeklyStats = writingStats.filter(stat => stat.date >= weekStart);
 			const weeklyWords = weeklyStats.reduce((sum, stat) => sum + stat.wordsWritten, 0);
 
+			console.log('StatisticsService Debug:', {
+				totalWordCount,
+				weeklyWords,
+				writingStatsCount: writingStats.length,
+				weeklyStatsCount: weeklyStats.length,
+				weekStart,
+				recentStats: weeklyStats.slice(0, 3).map(s => ({ date: s.date, words: s.wordsWritten, time: s.timeSpent }))
+			});
+
 			return {
 				projectCount: userProjects.length,
 				totalWords: totalWordCount,
