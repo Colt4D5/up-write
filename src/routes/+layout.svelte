@@ -1,7 +1,7 @@
 <script lang="ts">
 	import '../app.css';
-	import { page } from '$app/stores';
-	import { BookOpen, PenTool, User, Settings, Home, LogOut } from 'lucide-svelte';
+	import { page } from '$app/state';
+	import { BookOpen, PenTool, User, Settings, Home, LogOut, Users } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
 	
 	let { children, data } = $props();
@@ -13,7 +13,7 @@
 </script>
 
 <div class="min-h-screen bg-gray-50">
-	{#if $page.url.pathname !== '/login' && $page.url.pathname !== '/' && $page.url.pathname !== '/logout'}
+	{#if page.url.pathname !== '/login' && page.url.pathname !== '/' && page.url.pathname !== '/logout'}
 		<!-- Navigation Header -->
 		<nav class="bg-white shadow-sm border-b">
 			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -33,6 +33,10 @@
 						<a href="/projects" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
 							<BookOpen class="h-4 w-4" />
 							<span>Projects</span>
+						</a>
+						<a href="/friends" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+							<Users class="h-4 w-4" />
+							<span>Friends</span>
 						</a>
 						<a href="/profile" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
 							{#if data?.user?.profileImage}
@@ -59,7 +63,7 @@
 	{/if}
 
 	<!-- Main Content -->
-	<main class="{$page.url.pathname === '/login' || $page.url.pathname === '' || $page.url.pathname === '/logout' ? '' : 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8'}">
+	<main class="{page.url.pathname === '/login' || page.url.pathname === '' || page.url.pathname === '/logout' ? '' : 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8'}">
 		{@render children()}
 	</main>
 </div>
