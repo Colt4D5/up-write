@@ -541,6 +541,7 @@
 						onAnalyze={handleAnalyzeText}
 						placeholder="Start writing your story..."
 						class="h-full"
+						projectId={data.project.id}
 					/>
 				</div>
 			{:else}

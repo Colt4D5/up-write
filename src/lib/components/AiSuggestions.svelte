@@ -82,18 +82,18 @@
 						<p class="text-sm text-blue-700">
 							{analysis.wordCount} words • 
 							{#if analysis.readabilityScore}
-								Readability: {analysis.readabilityScore}/100
+								Readability: {Math.round(analysis.readabilityScore)}/100
 							{/if}
 						</p>
 					</div>
 					<div class="text-2xl font-bold text-blue-900">
-						{analysis.overallScore}/100
+						{Math.round(analysis.overallScore)}/100
 					</div>
 				</div>
 				<div class="mt-2 w-full bg-blue-200 rounded-full h-2">
 					<div 
 						class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-						style="width: {analysis.overallScore}%"
+						style="width: {Math.round(analysis.overallScore)}%"
 					></div>
 				</div>
 			</div>

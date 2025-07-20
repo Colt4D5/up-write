@@ -20,6 +20,7 @@
 		Lightbulb
 	} from 'lucide-svelte';
 	import { debounce } from '$lib/utils';
+	import { WritingSessionTracker } from '$lib/writing-session-tracker';
 
 	interface Props {
 		content?: string;
@@ -28,6 +29,7 @@
 		onAnalyze?: (content: string) => void;
 		readonly?: boolean;
 		class?: string;
+		projectId?: string; // Add project ID for session tracking
 	}
 
 	let {
@@ -36,13 +38,15 @@
 		onUpdate,
 		onAnalyze,
 		readonly = false,
-		class: className = ''
+		class: className = '',
+		projectId
 	}: Props = $props();
 
 	let editor: Editor | null = $state<Editor | null>(null);
 	let element: HTMLElement | null = $state<HTMLElement | null>(null);
 	let showSuggestions = $state(false);
 	let isAnalyzing = $state(false);
+	let sessionTracker: WritingSessionTracker | null = $state(null);
 	
 	// Reactive counters that update when editor content changes
 	let characterCount = $state(0);
@@ -61,6 +65,11 @@
 	let lastSetContent = $state('');
 
 	onMount(() => {
+		// Initialize session tracker if projectId is provided
+		if (projectId && !readonly) {
+			sessionTracker = new WritingSessionTracker(projectId);
+		}
+
 		editor = new Editor({
 			element: element,
 			extensions: [
@@ -96,6 +105,16 @@
 					wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
 				}
 				
+				// Start session tracking when user starts writing
+				if (sessionTracker && !sessionTracker.active && wordCount > 0) {
+					sessionTracker.start(wordCount);
+				}
+				
+				// Update session activity
+				if (sessionTracker && sessionTracker.active) {
+					sessionTracker.updateActivity(wordCount);
+				}
+				
 				// Only call update if content actually changed and it's not from us setting it
 				if (debouncedUpdate && html !== lastSetContent && html !== content) {
 					lastSetContent = html; // Track what we're about to send up
@@ -104,6 +123,12 @@
 				
 				if (debouncedAnalyze && text.trim().length > 50) {
 					debouncedAnalyze(text);
+				}
+			},
+			onFocus: () => {
+				// Start session when editor gets focus (if not already started)
+				if (sessionTracker && !sessionTracker.active && wordCount > 0) {
+					sessionTracker.start(wordCount);
 				}
 			}
 		});
@@ -123,8 +148,43 @@
 	});
 
 	onDestroy(() => {
+		// Clean up session tracker
+		if (sessionTracker) {
+			sessionTracker.destroy();
+			sessionTracker = null;
+		}
+		
 		if (!editor) return;
 		editor.destroy();
+	});
+
+	// React to content prop changes
+	$effect(() => {
+		if (!editor) return;
+		
+		const currentContent = editor.getHTML();
+		
+		// Only update if content actually changed and it's not from user typing
+		if (content !== currentContent && content !== lastSetContent) {
+			lastSetContent = content || '';
+			editor.commands.setContent(content || '', { emitUpdate: false });
+			
+			// Update counters immediately
+			const text = editor.getText();
+			if (editor.storage.characterCount) {
+				characterCount = editor.storage.characterCount.characters();
+				wordCount = editor.storage.characterCount.words();
+			} else {
+				characterCount = text.length;
+				wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+			}
+			
+			// If content is empty, ensure counters are 0
+			if (!content || content.trim() === '' || content === '<p></p>') {
+				characterCount = 0;
+				wordCount = 0;
+			}
+		}
 	});
 
 	function toggleBold() {
