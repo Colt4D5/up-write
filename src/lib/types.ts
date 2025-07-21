@@ -11,6 +11,7 @@ export interface CreateProjectData {
 	description?: string;
 	genre?: string;
 	targetWordCount?: number;
+	status?: ProjectStatus;
 }
 
 export interface CreateNotebookData {
