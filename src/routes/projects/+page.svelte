@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { PlusCircle, BookOpen, Calendar, Target, MoreVertical, Edit, Trash2, Settings, AlertTriangle } from 'lucide-svelte';
-	import { formatDate, getProjectStatusColor } from '$lib/utils';
+	import { formatDate, getProjectStatusColor, formatWordCount, calculateProgress, getProgressColor } from '$lib/utils';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
@@ -167,10 +167,28 @@
 								</div>
 							{/if}
 							
+							<!-- Word count and progress -->
 							{#if project.targetWordCount}
+								{@const currentWords = project.currentWordCount || 0}
+								{@const progress = calculateProgress(currentWords, project.targetWordCount)}
+								{@const progressColor = getProgressColor(progress)}
+								
+								<div class="space-y-1">
+									<div class="flex items-center justify-between text-sm text-gray-500">
+										<div class="flex items-center">
+											<Target class="h-3 w-3 mr-1" />
+											<span>Progress: {formatWordCount(currentWords)} / {formatWordCount(project.targetWordCount)} words</span>
+										</div>
+										<span class="text-xs font-medium">{progress.toFixed(0)}%</span>
+									</div>
+									<div class="w-full bg-gray-200 rounded-full h-2">
+										<div class="h-2 rounded-full {progressColor} transition-all duration-500 ease-out" style="width: {progress}%"></div>
+									</div>
+								</div>
+							{:else if project.currentWordCount && project.currentWordCount > 0}
 								<div class="flex items-center text-sm text-gray-500">
 									<Target class="h-3 w-3 mr-1" />
-									<span>Target: {project.targetWordCount.toLocaleString()} words</span>
+									<span>Current: {formatWordCount(project.currentWordCount)} words</span>
 								</div>
 							{/if}
 

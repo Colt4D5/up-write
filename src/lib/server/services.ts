@@ -24,6 +24,40 @@ export class ProjectService {
 		return await db.select().from(project).where(eq(project.userId, userId)).orderBy(desc(project.updatedAt));
 	}
 
+	static async getUserProjectsWithWordCounts(userId: string) {
+		const userProjects = await db.select().from(project)
+			.where(eq(project.userId, userId))
+			.orderBy(desc(project.updatedAt));
+
+		// Calculate current word count for each project
+		const projectsWithWordCounts = await Promise.all(
+			userProjects.map(async (proj) => {
+				// Get all notebooks for this project
+				const notebooks = await db.select().from(notebook)
+					.where(eq(notebook.projectId, proj.id));
+
+				let currentWordCount = 0;
+				
+				// Calculate total word count from all documents in this project
+				for (const nb of notebooks) {
+					const documents = await db.select({ wordCount: document.wordCount })
+						.from(document)
+						.where(eq(document.notebookId, nb.id));
+					
+					const notebookWordCount = documents.reduce((sum, doc) => sum + doc.wordCount, 0);
+					currentWordCount += notebookWordCount;
+				}
+
+				return {
+					...proj,
+					currentWordCount
+				};
+			})
+		);
+
+		return projectsWithWordCounts;
+	}
+
 	static async getProject(projectId: string, userId: string) {
 		const [proj] = await db.select().from(project).where(
 			and(eq(project.id, projectId), eq(project.userId, userId))

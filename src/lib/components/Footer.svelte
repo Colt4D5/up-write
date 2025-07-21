@@ -7,7 +7,7 @@
 		<div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
 			<div class="flex items-center space-x-4">
 				<p class="text-sm text-gray-600">
-					© 2025 WriterBuddy. Made for writers, by writers.
+					© {new Date().getFullYear()} WriterBuddy. Made for writers, by writers.
 				</p>
 			</div>
 			

@@ -55,3 +55,16 @@ export interface WritingSession {
 	wordsWritten: number;
 	timeSpent: number; // in minutes
 }
+
+export interface ProjectWithWordCount {
+	id: string;
+	userId: string;
+	title: string;
+	description?: string;
+	genre?: string;
+	targetWordCount?: number;
+	status: ProjectStatus;
+	createdAt: Date;
+	updatedAt: Date;
+	currentWordCount: number;
+}

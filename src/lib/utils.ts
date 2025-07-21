@@ -102,3 +102,16 @@ export function formatBirthday(birthday: string): string {
 		day: 'numeric' 
 	});
 }
+
+export function calculateProgress(current: number, target: number): number {
+	if (target <= 0) return 0;
+	return Math.min((current / target) * 100, 100);
+}
+
+export function getProgressColor(percentage: number): string {
+	if (percentage >= 100) return 'bg-green-500';
+	if (percentage >= 75) return 'bg-emerald-500';
+	if (percentage >= 50) return 'bg-blue-500';
+	if (percentage >= 25) return 'bg-amber-500';
+	return 'bg-slate-400';
+}

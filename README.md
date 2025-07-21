@@ -173,6 +173,13 @@ Built on TipTap, the editor provides:
 - `pnpm db:push`: Push database schema changes
 - `pnpm db:studio`: Open Drizzle Studio for database management
 
+### Features To Come
+
+- Plot consistency checker
+- AI-generated character wikis strictly from the writing
+- Timeline continuity/generator
+- Intensity graphs
+
 ### Contributing
 
 1. Fork the repository

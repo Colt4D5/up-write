@@ -7,7 +7,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(302, '/login');
 	}
 
-	const projects = await ProjectService.getUserProjects(locals.user.id);
+	const projects = await ProjectService.getUserProjectsWithWordCounts(locals.user.id);
 
 	return {
 		projects

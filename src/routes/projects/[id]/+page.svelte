@@ -14,7 +14,12 @@
 		X,
 		Save,
 		Check,
-		AlertCircle
+		AlertCircle,
+		ChevronLeft,
+		PanelLeftClose,
+		PanelLeftOpen,
+		PanelRightClose,
+		PanelRightOpen
 	} from 'lucide-svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import AiSuggestions from '$lib/components/AiSuggestions.svelte';
@@ -31,6 +36,10 @@
 	let isAnalyzing = $state(false);
 	let expandedNotebooks = $state<Set<string>>(new Set());
 	let searchQuery = $state('');
+	
+	// Sidebar visibility state
+	let leftSidebarVisible = $state(true);
+	let rightSidebarVisible = $state(true);
 	
 	// New document creation modal state
 	let showCreateDocModal = $state(false);
@@ -102,6 +111,14 @@
 		newDocName = '';
 		newDocCategory = '';
 		newDocDescription = '';
+	}
+
+	function toggleLeftSidebar() {
+		leftSidebarVisible = !leftSidebarVisible;
+	}
+
+	function toggleRightSidebar() {
+		rightSidebarVisible = !rightSidebarVisible;
 	}
 
 	async function createDocument() {
@@ -340,137 +357,208 @@
 
 <div class="flex h-screen bg-gray-50">
 	<!-- Sidebar -->
-	<div class="w-80 bg-white border-r border-gray-200 flex flex-col">
-		<!-- Project Header -->
-		<div class="p-4 border-b border-gray-200">
-			<div class="flex items-center justify-between mb-2">
-				<h1 class="text-lg font-semibold text-gray-900 truncate" title={data.project.title}>
-					{data.project.title}
-				</h1>
-				<div class="flex items-center space-x-2">
-					<button 
-						class="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
-						onclick={() => openCreateDocModal()}
-						title="New Document"
-					>
-						<Plus class="h-4 w-4" />
-					</button>
-					<button class="p-1 text-gray-400 hover:text-gray-600 rounded">
-						<Settings class="h-4 w-4" />
-					</button>
+	<div class="bg-white border-r border-gray-200 flex flex-col transition-all duration-300 relative {leftSidebarVisible ? 'w-80' : 'w-16'}">
+		{#if leftSidebarVisible}
+			<!-- Full Sidebar Content -->
+			<!-- Project Header -->
+			<div class="p-4 border-b border-gray-200">
+				<div class="flex items-center justify-between mb-2">
+					<h1 class="text-lg font-semibold text-gray-900 truncate" title={data.project.title}>
+						{data.project.title}
+					</h1>
+					<div class="flex items-center space-x-2">
+						<button 
+							class="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded"
+							onclick={() => openCreateDocModal()}
+							title="New Document"
+						>
+							<Plus class="h-4 w-4" />
+						</button>
+						<button class="p-1 text-gray-400 hover:text-gray-600 rounded">
+							<Settings class="h-4 w-4" />
+						</button>
+					</div>
+				</div>
+				
+				{#if data.project.description}
+					<p class="text-sm text-gray-600 line-clamp-2" title={data.project.description}>
+						{data.project.description}
+					</p>
+				{/if}
+
+				<div class="flex items-center justify-between mt-3 text-xs text-gray-500">
+					<span>{data.project.genre || 'No genre'}</span>
+					{#if data.project.targetWordCount}
+						<span>Target: {data.project.targetWordCount.toLocaleString()} words</span>
+					{/if}
 				</div>
 			</div>
-			
-			{#if data.project.description}
-				<p class="text-sm text-gray-600 line-clamp-2" title={data.project.description}>
-					{data.project.description}
-				</p>
-			{/if}
 
-			<div class="flex items-center justify-between mt-3 text-xs text-gray-500">
-				<span>{data.project.genre || 'No genre'}</span>
-				{#if data.project.targetWordCount}
-					<span>Target: {data.project.targetWordCount.toLocaleString()} words</span>
-				{/if}
+			<!-- Search -->
+			<div class="p-3 border-b border-gray-200">
+				<div class="relative">
+					<Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+					<input
+						bind:value={searchQuery}
+						type="text"
+						placeholder="Search notebooks and documents..."
+						class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+					/>
+				</div>
 			</div>
-		</div>
 
-		<!-- Search -->
-		<div class="p-3 border-b border-gray-200">
-			<div class="relative">
-				<Search class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-				<input
-					bind:value={searchQuery}
-					type="text"
-					placeholder="Search notebooks and documents..."
-					class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-				/>
-			</div>
-		</div>
-
-		<!-- Notebooks Tree -->
-		<div class="flex-1 overflow-y-auto">
-			<div class="p-3 space-y-1">
-				{#each filteredNotebooks as notebook}
-					<div>
-						<!-- Notebook Header -->
-						<button
-							type="button"
-							onclick={() => toggleNotebook(notebook.id)}
-							class="w-full flex items-center justify-between p-2 text-left rounded-md hover:bg-gray-100 group"
-						>
-							<div class="flex items-center space-x-2 min-w-0 flex-1">
-								{#if expandedNotebooks.has(notebook.id)}
-									<ChevronDown class="h-4 w-4 text-gray-400" />
-									<FolderOpen class="h-4 w-4 text-blue-500" />
-								{:else}
-									<ChevronRight class="h-4 w-4 text-gray-400" />
-									<Folder class="h-4 w-4 text-blue-500" />
-								{/if}
-								<span class="font-medium text-gray-900 truncate">{notebook.title}</span>
-							</div>
-							
-							<div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100">
-								<span class="text-xs text-gray-500">
-									{notebook.documents?.length || 0}
-								</span>
-								<div 
-									class="p-1 hover:bg-gray-200 rounded cursor-pointer" 
-									title="Add document"
-									onclick={(e) => {
-										e.stopPropagation();
-										openCreateDocModal(notebook.id, notebook.type);
-									}}
-									role="button"
-									tabindex="0"
-									onkeydown={(e) => {
-										if (e.key === 'Enter' || e.key === ' ') {
-											e.preventDefault();
+			<!-- Notebooks Tree -->
+			<div class="flex-1 overflow-y-auto">
+				<div class="p-3 space-y-1">
+					{#each filteredNotebooks as notebook}
+						<div>
+							<!-- Notebook Header -->
+							<button
+								type="button"
+								onclick={() => toggleNotebook(notebook.id)}
+								class="w-full flex items-center justify-between p-2 text-left rounded-md hover:bg-gray-100 group"
+							>
+								<div class="flex items-center space-x-2 min-w-0 flex-1">
+									{#if expandedNotebooks.has(notebook.id)}
+										<ChevronDown class="h-4 w-4 text-gray-400" />
+										<FolderOpen class="h-4 w-4 text-blue-500" />
+									{:else}
+										<ChevronRight class="h-4 w-4 text-gray-400" />
+										<Folder class="h-4 w-4 text-blue-500" />
+									{/if}
+									<span class="font-medium text-gray-900 truncate">{notebook.title}</span>
+									{#if (notebook.documents?.length || 0) > 0}
+										<span class="text-xs text-gray-400 font-normal ml-1">
+											({notebook.documents?.length || 0})
+										</span>
+									{/if}
+								</div>
+								
+								<div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100">
+									<div 
+										class="p-1 hover:bg-gray-200 rounded cursor-pointer" 
+										title="Add document"
+										onclick={(e) => {
 											e.stopPropagation();
 											openCreateDocModal(notebook.id, notebook.type);
-										}
-									}}
-								>
-									<Plus class="h-3 w-3" />
-								</div>
-							</div>
-						</button>
-
-						<!-- Documents -->
-						{#if expandedNotebooks.has(notebook.id) && notebook.documents}
-							<div class="ml-6 space-y-1">
-								{#each notebook.documents as document}
-									<button
-										type="button"
-										onclick={() => selectDocument(document)}
-										class="w-full flex items-center space-x-2 p-2 text-left rounded-md hover:bg-gray-100 {selectedDocument?.id === document.id ? 'bg-blue-50 border border-blue-200' : ''}"
+										}}
+										role="button"
+										tabindex="0"
+										onkeydown={(e) => {
+											if (e.key === 'Enter' || e.key === ' ') {
+												e.preventDefault();
+												e.stopPropagation();
+												openCreateDocModal(notebook.id, notebook.type);
+											}
+										}}
 									>
-										<FileText class="h-4 w-4 text-gray-400 flex-shrink-0" />
-										<div class="min-w-0 flex-1">
-											<div class="font-medium text-gray-900 truncate text-sm">
-												{document.title}
-											</div>
-											<div class="text-xs text-gray-500">
-												{document.wordCount || 0} words • 
-												{formatDate(new Date(document.updatedAt))}
-											</div>
-										</div>
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				{/each}
-			</div>
-		</div>
+										<Plus class="h-3 w-3" />
+									</div>
+								</div>
+							</button>
 
-		<!-- Add Notebook Button -->
-		<div class="p-3 border-t border-gray-200">
-			<button class="w-full flex items-center justify-center space-x-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md border border-dashed border-gray-300">
-				<Plus class="h-4 w-4" />
-				<span class="text-sm">Add Notebook</span>
-			</button>
-		</div>
+							<!-- Documents -->
+							{#if expandedNotebooks.has(notebook.id) && notebook.documents}
+								<div class="ml-6 space-y-1">
+									{#each notebook.documents as document}
+										<button
+											type="button"
+											onclick={() => selectDocument(document)}
+											class="w-full flex items-center space-x-2 p-2 text-left rounded-md hover:bg-gray-100 {selectedDocument?.id === document.id ? 'bg-blue-50 border border-blue-200' : ''}"
+										>
+											<FileText class="h-4 w-4 text-gray-400 flex-shrink-0" />
+											<div class="min-w-0 flex-1">
+												<div class="font-medium text-gray-900 truncate text-sm">
+													{document.title}
+												</div>
+												<div class="text-xs text-gray-500">
+													{document.wordCount || 0} words • 
+													{formatDate(new Date(document.updatedAt))}
+												</div>
+											</div>
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Add Notebook Button -->
+			<div class="p-3 border-t border-gray-200">
+				<button class="w-full flex items-center justify-center space-x-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md border border-dashed border-gray-300">
+					<Plus class="h-4 w-4" />
+					<span class="text-sm">Add Notebook</span>
+				</button>
+			</div>
+		{:else}
+			<!-- Collapsed Sidebar - Icon Only View -->
+			<div class="flex flex-col items-center py-4 space-y-3 flex-1">
+				<!-- Project Icon -->
+				<div class="p-2 bg-blue-50 rounded-lg">
+					<BookOpen class="h-5 w-5 text-blue-600" />
+				</div>
+				
+				<!-- Divider -->
+				<div class="w-8 h-px bg-gray-200"></div>
+				
+				<!-- New Document Button -->
+				<button 
+					class="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+					onclick={() => openCreateDocModal()}
+					title="New Document"
+				>
+					<Plus class="h-5 w-5" />
+				</button>
+				
+				<!-- Search Icon -->
+				<button 
+					class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg"
+					title="Search (expand to use)"
+				>
+					<Search class="h-5 w-5" />
+				</button>
+				
+				<!-- Notebooks -->
+				{#each filteredNotebooks.slice(0, 3) as notebook}
+					<button 
+						class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg relative"
+						title={notebook.title}
+					>
+						<Folder class="h-5 w-5" />
+						{#if (notebook.documents?.length || 0) > 0}
+							<span class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
+								{notebook.documents?.length}
+							</span>
+						{/if}
+					</button>
+				{/each}
+				
+				<!-- More indicator if there are more notebooks -->
+				{#if filteredNotebooks.length > 3}
+					<button 
+						class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg"
+						title={`${filteredNotebooks.length - 3} more notebooks`}
+					>
+						<MoreVertical class="h-5 w-5" />
+					</button>
+				{/if}
+			</div>
+		{/if}
+		
+		<!-- Toggle Button -->
+		<button 
+			class="absolute -right-3 top-4 bg-white border border-gray-200 rounded-full p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 shadow-sm z-10"
+			onclick={toggleLeftSidebar}
+			title={leftSidebarVisible ? 'Collapse sidebar' : 'Expand sidebar'}
+		>
+			{#if leftSidebarVisible}
+				<PanelLeftClose class="h-4 w-4" />
+			{:else}
+				<PanelLeftOpen class="h-4 w-4" />
+			{/if}
+		</button>
 	</div>
 
 	<!-- Main Content Area -->
@@ -526,6 +614,7 @@
 								<Save class="h-3 w-3" />
 								<span>{isSaving ? 'Saving...' : 'Save'}</span>
 							</button>
+							
 							<button class="p-2 text-gray-400 hover:text-gray-600 rounded">
 								<MoreVertical class="h-4 w-4" />
 							</button>
@@ -564,16 +653,41 @@
 		</div>
 
 		<!-- AI Suggestions Panel -->
-		<div class="w-96 border-l border-gray-200 bg-gray-50 overflow-y-auto">
-			<div class="p-4">
-				<AiSuggestions
-					analysis={aiAnalysis}
-					isLoading={isAnalyzing}
-					onAcceptSuggestion={handleAcceptSuggestion}
-					onDismissSuggestion={handleDismissSuggestion}
-				/>
+		{#if rightSidebarVisible}
+			<div class="w-96 border-l border-gray-200 bg-gray-50 overflow-y-auto">
+				<!-- AI Panel Header -->
+				<div class="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
+					<h3 class="font-medium text-gray-900">AI Writing Assistant</h3>
+					<button 
+						class="p-1 text-gray-400 hover:text-gray-600 rounded"
+						onclick={toggleRightSidebar}
+						title="Hide AI assistant"
+					>
+						<PanelRightClose class="h-4 w-4" />
+					</button>
+				</div>
+				
+				<div class="p-4">
+					<AiSuggestions
+						analysis={aiAnalysis}
+						isLoading={isAnalyzing}
+						onAcceptSuggestion={handleAcceptSuggestion}
+						onDismissSuggestion={handleDismissSuggestion}
+					/>
+				</div>
 			</div>
-		</div>
+		{:else}
+			<!-- Collapsed AI Panel - Show toggle button on the right edge -->
+			<div class="w-8 border-l border-gray-200 bg-gray-50 relative">
+				<button 
+					class="absolute top-4 -left-4 bg-white border border-gray-200 rounded-l-lg p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 shadow-sm z-10"
+					onclick={toggleRightSidebar}
+					title="Show AI assistant"
+				>
+					<PanelRightOpen class="h-4 w-4" />
+				</button>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Floating Action Button (Mobile) -->
