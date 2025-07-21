@@ -25,6 +25,7 @@
 	} from 'lucide-svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import AiSuggestions from '$lib/components/AiSuggestions.svelte';
+	import CreateNotebookModal from '$lib/components/CreateNotebookModal.svelte';
 	import { formatDate, countWords } from '$lib/utils';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
@@ -49,6 +50,10 @@
 	let newDocCategory = $state('');
 	let newDocDescription = $state('');
 	let isCreatingDocument = $state(false);
+
+	// New notebook creation modal state
+	let showCreateNotebookModal = $state(false);
+	let isCreatingNotebook = $state(false);
 
 	// Document save state
 	let hasUnsavedChanges = $state(false);
@@ -232,6 +237,47 @@
 			return false;
 		} finally {
 			isSaving = false;
+		}
+	}
+
+	function openCreateNotebookModal() {
+		showCreateNotebookModal = true;
+	}
+
+	function closeCreateNotebookModal() {
+		showCreateNotebookModal = false;
+	}
+
+	async function createNotebook(notebookData: { title: string; type: any; contributesToWordCount: boolean }) {
+		isCreatingNotebook = true;
+		
+		try {
+			const response = await fetch('/api/notebooks', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					projectId: data.project.id,
+					title: notebookData.title,
+					type: notebookData.type,
+					contributesToWordCount: notebookData.contributesToWordCount
+				})
+			});
+
+			if (response.ok) {
+				// Refresh the data to show the new notebook
+				await invalidateAll();
+				closeCreateNotebookModal();
+			} else {
+				const error = await response.json();
+				alert('Failed to create notebook: ' + (error.error || 'Unknown error'));
+			}
+		} catch (error) {
+			console.error('Create notebook error:', error);
+			alert('Failed to create notebook. Please try again.');
+		} finally {
+			isCreatingNotebook = false;
 		}
 	}
 
@@ -592,7 +638,10 @@
 
 			<!-- Add Notebook Button -->
 			<div class="p-3 border-t border-gray-200">
-				<button class="w-full flex items-center justify-center space-x-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md border border-dashed border-gray-300">
+				<button 
+					onclick={openCreateNotebookModal}
+					class="w-full flex items-center justify-center space-x-2 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md border border-dashed border-gray-300"
+				>
 					<Plus class="h-4 w-4" />
 					<span class="text-sm">Add Notebook</span>
 				</button>
@@ -890,3 +939,11 @@
 		</div>
 	</div>
 {/if}
+
+<!-- Notebook Creation Modal -->
+<CreateNotebookModal
+	visible={showCreateNotebookModal}
+	onClose={closeCreateNotebookModal}
+	onSubmit={createNotebook}
+	isSubmitting={isCreatingNotebook}
+/>
