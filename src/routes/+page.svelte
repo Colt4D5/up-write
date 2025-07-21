@@ -160,14 +160,14 @@
 	<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="text-center">
 			{#if heroVisible}
-				<div in:fly={{ y: 50, duration: 800, delay: 200 }}>
+				<div transition:fly={{ y: 50, duration: 800, delay: 200 }}>
 					<div class="inline-flex items-center space-x-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
 						<Sparkles class="h-4 w-4" />
 						<span>✨ Transform your writing journey today</span>
 					</div>
 				</div>
 				
-				<h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight" in:fly={{ y: 50, duration: 800, delay: 400 }}>
+				<h1 class="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight" transition:fly={{ y: 50, duration: 800, delay: 400 }}>
 					Your Complete
 					<span class="relative">
 						<span class="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-pulse">
@@ -177,12 +177,12 @@
 					</span>
 				</h1>
 				
-				<p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed" in:fly={{ y: 50, duration: 800, delay: 600 }}>
+				<p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed" transition:fly={{ y: 50, duration: 800, delay: 600 }}>
 					Stay organized, track your progress, get AI-powered insights, and connect with fellow writers. 
 					Everything you need to turn your writing dreams into <span class="text-purple-600 font-semibold">reality</span>.
 				</p>
 				
-				<div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8" in:fly={{ y: 50, duration: 800, delay: 800 }}>
+				<div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8" transition:fly={{ y: 50, duration: 800, delay: 800 }}>
 					<a href="/login" class="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-semibold flex items-center space-x-2 text-lg transform hover:scale-105 hover:shadow-2xl">
 						<span>Start Writing Today</span>
 						<ArrowRight class="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
@@ -193,7 +193,7 @@
 					</a>
 				</div>
 				
-				<div class="flex flex-col sm:flex-row gap-4 justify-center items-center text-sm text-gray-500" in:fade={{ duration: 800, delay: 1000 }}>
+				<div class="flex flex-col sm:flex-row gap-4 justify-center items-center text-sm text-gray-500" transition:fade={{ duration: 800, delay: 1000 }}>
 					<div class="flex items-center space-x-2">
 						<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
 						<span>Free to get started</span>
@@ -235,7 +235,7 @@
 <section id="features" class="py-20 bg-gradient-to-b from-white to-gray-50">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		{#if featuresVisible}
-			<div class="text-center mb-16" in:fly={{ y: 50, duration: 800 }}>
+			<div class="text-center mb-16" transition:fly={{ y: 50, duration: 800 }}>
 				<div class="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
 					<Zap class="h-4 w-4" />
 					<span>Powerful Features</span>
@@ -252,7 +252,7 @@
 				{#if featuresVisible}
 					<div 
 						class="group relative p-8 bg-white rounded-2xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100"
-						in:fly={{ y: 80, duration: 800, delay: i * 100 }}
+						transition:fly={{ y: 80, duration: 800, delay: i * 100 }}
 					>
 						<!-- Gradient background on hover -->
 						<div class="absolute inset-0 bg-gradient-to-br {feature.color} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-500"></div>
@@ -273,7 +273,7 @@
 		</div>
 
 		{#if featuresVisible}
-			<div class="text-center mt-16" in:fade={{ duration: 800, delay: 800 }}>
+			<div class="text-center mt-16" transition:fade={{ duration: 800, delay: 800 }}>
 				<div class="inline-flex items-center space-x-4 bg-gradient-to-r from-blue-50 to-purple-50 px-6 py-3 rounded-full">
 					<div class="flex -space-x-2">
 						<div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full border-2 border-white flex items-center justify-center">
@@ -305,7 +305,7 @@
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 			<div>
 				{#if benefitsVisible}
-					<div in:fly={{ x: -50, duration: 800 }}>
+					<div transition:fly={{ x: -50, duration: 800 }}>
 						<div class="inline-flex items-center space-x-2 bg-gradient-to-r from-green-100 to-blue-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
 							<CheckCircle class="h-4 w-4" />
 							<span>Why Choose Writer Buddy</span>
@@ -323,7 +323,7 @@
 						{#each benefits as benefit, i}
 							<div 
 								class="flex items-start space-x-4 p-4 bg-white/80 backdrop-blur rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300"
-								in:fly={{ x: -50, duration: 600, delay: 200 + (i * 100) }}
+								transition:fly={{ x: -50, duration: 600, delay: 200 + (i * 100) }}
 							>
 								<div class="flex-shrink-0">
 									<div class="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -339,7 +339,7 @@
 			
 			<div class="relative">
 				{#if benefitsVisible}
-					<div class="relative" in:fly={{ x: 50, duration: 800, delay: 300 }}>
+					<div class="relative" transition:fly={{ x: 50, duration: 800, delay: 300 }}>
 						<!-- Main dashboard mockup -->
 						<div class="bg-white rounded-2xl shadow-2xl p-8 transform hover:scale-105 transition-transform duration-500">
 							<div class="flex items-center space-x-4 mb-8">
@@ -381,7 +381,7 @@
 										<div 
 											class="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-1000 ease-out"
 											style="width: 84%"
-											in:scale={{ duration: 1000, delay: 800 }}
+											transition:scale={{ duration: 1000, delay: 800 }}
 										></div>
 									</div>
 									<p class="text-sm text-gray-500 mt-2">🔥 On fire! Keep up the great work!</p>
@@ -404,7 +404,7 @@
 						<!-- Floating stat cards -->
 						<div 
 							class="absolute -top-6 -right-6 bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300"
-							in:scale={{ duration: 600, delay: 1000 }}
+							transition:scale={{ duration: 600, delay: 1000 }}
 						>
 							<div class="flex items-center space-x-2">
 								<Sparkles class="h-5 w-5" />
@@ -417,7 +417,7 @@
 
 						<div 
 							class="absolute -bottom-6 -left-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl shadow-lg transform -rotate-3 hover:rotate-0 transition-transform duration-300"
-							in:scale={{ duration: 600, delay: 1200 }}
+							transition:scale={{ duration: 600, delay: 1200 }}
 						>
 							<div class="flex items-center space-x-2">
 								<Heart class="h-5 w-5" />
@@ -438,7 +438,7 @@
 <section id="testimonials" class="py-20 bg-white relative">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		{#if testimonialsVisible}
-			<div class="text-center mb-16" in:fly={{ y: 50, duration: 800 }}>
+			<div class="text-center mb-16" transition:fly={{ y: 50, duration: 800 }}>
 				<div class="inline-flex items-center space-x-2 bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
 					<Star class="h-4 w-4" />
 					<span>Writer Success Stories</span>
@@ -453,7 +453,7 @@
 				{#if testimonialsVisible}
 					<div 
 						class="group relative bg-gradient-to-br {testimonial.bgGradient} border border-gray-100 rounded-2xl p-8 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
-						in:fly={{ y: 80, duration: 800, delay: i * 150 }}
+						transition:fly={{ y: 80, duration: 800, delay: i * 150 }}
 					>
 						<!-- Avatar -->
 						<div class="flex items-center mb-6">
@@ -491,7 +491,7 @@
 
 		{#if testimonialsVisible}
 			<!-- Trust indicators -->
-			<div class="text-center mt-16" in:fade={{ duration: 800, delay: 600 }}>
+			<div class="text-center mt-16" transition:fade={{ duration: 800, delay: 600 }}>
 				<div class="inline-flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-8 bg-gray-50 px-8 py-6 rounded-2xl">
 					<div class="flex items-center space-x-2">
 						<div class="flex -space-x-1">
@@ -523,7 +523,7 @@
 
 	<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		{#if statsVisible}
-			<div class="text-center mb-16" in:fly={{ y: 50, duration: 800 }}>
+			<div class="text-center mb-16" transition:fly={{ y: 50, duration: 800 }}>
 				<div class="inline-flex items-center space-x-2 bg-white/20 backdrop-blur text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
 					<TrendingUp class="h-4 w-4" />
 					<span>Growing Community</span>
@@ -538,7 +538,7 @@
 				{#if statsVisible}
 					<div 
 						class="text-center group"
-						in:fly={{ y: 80, duration: 800, delay: stat.delay }}
+						transition:fly={{ y: 80, duration: 800, delay: stat.delay }}
 					>
 						<div class="relative mb-4">
 							<div class="w-20 h-20 mx-auto bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-white/30 transition-all duration-300">
@@ -550,7 +550,7 @@
 						
 						<div 
 							class="text-4xl md:text-5xl font-bold mb-2 group-hover:scale-110 transition-transform duration-300"
-							in:scale={{ duration: 1000, delay: stat.delay + 200 }}
+							transition:scale={{ duration: 1000, delay: stat.delay + 200 }}
 						>
 							{stat.value}
 						</div>
@@ -585,7 +585,7 @@
 
 		{#if statsVisible}
 			<!-- Bottom CTA in stats -->
-			<div class="text-center mt-16" in:fade={{ duration: 800, delay: 1000 }}>
+			<div class="text-center mt-16" transition:fade={{ duration: 800, delay: 1000 }}>
 				<div class="inline-flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 bg-white/10 backdrop-blur border border-white/20 px-8 py-6 rounded-2xl">
 					<div class="flex items-center space-x-3">
 						<div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -623,7 +623,7 @@
 		{#if ctaVisible}
 			<div class="text-center">
 				<!-- Badge -->
-				<div in:fly={{ y: 50, duration: 800 }}>
+				<div transition:fly={{ y: 50, duration: 800 }}>
 					<div class="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur border border-white/20 text-white px-6 py-3 rounded-full text-sm font-medium mb-8">
 						<Sparkles class="h-4 w-4 text-yellow-400" />
 						<span>Limited Time: Free Premium Features for Early Adopters</span>
@@ -632,7 +632,7 @@
 				</div>
 
 				<!-- Main heading -->
-				<div in:fly={{ y: 50, duration: 800, delay: 200 }}>
+				<div transition:fly={{ y: 50, duration: 800, delay: 200 }}>
 					<h2 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">
 						Ready to Transform 
 						<span class="relative">
@@ -645,7 +645,7 @@
 					</h2>
 				</div>
 
-				<div in:fly={{ y: 50, duration: 800, delay: 400 }}>
+				<div transition:fly={{ y: 50, duration: 800, delay: 400 }}>
 					<p class="text-xl md:text-2xl mb-12 text-gray-300 max-w-3xl mx-auto leading-relaxed">
 						Join thousands of writers who have already discovered the power of 
 						<span class="text-blue-400 font-semibold">organized</span>, 
@@ -654,7 +654,7 @@
 				</div>
 
 				<!-- CTA Buttons -->
-				<div class="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12" in:fly={{ y: 50, duration: 800, delay: 600 }}>
+				<div class="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12" transition:fly={{ y: 50, duration: 800, delay: 600 }}>
 					<a href="/login" class="group relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-10 py-5 rounded-2xl font-bold text-xl flex items-center space-x-3 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl">
 						<Zap class="h-6 w-6 group-hover:animate-pulse" />
 						<span>Start Your Free Account</span>
@@ -673,7 +673,7 @@
 				</div>
 				
 				<!-- Trust indicators -->
-				<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto" in:fade={{ duration: 800, delay: 800 }}>
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto" transition:fade={{ duration: 800, delay: 800 }}>
 					<div class="flex flex-col items-center space-y-2 p-4 bg-white/5 backdrop-blur rounded-xl border border-white/10">
 						<Shield class="h-8 w-8 text-green-400" />
 						<span class="font-semibold text-white">Secure & Private</span>
@@ -692,7 +692,7 @@
 				</div>
 
 				<!-- Social proof -->
-				<div class="mt-12" in:fade={{ duration: 800, delay: 1000 }}>
+				<div class="mt-12" transition:fade={{ duration: 800, delay: 1000 }}>
 					<p class="text-gray-400 mb-4">Trusted by writers at</p>
 					<div class="flex justify-center items-center space-x-8 opacity-60">
 						<!-- Placeholder for company logos -->
