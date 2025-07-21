@@ -3,11 +3,15 @@ import * as auth from '$lib/server/auth';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async (event) => {
-    // If user is not logged in, redirect to login
-    if (!event.locals.session) {
-        return redirect(302, '/login');
+    // If user is logged in, redirect to dashboard
+    if (event.locals.session) {
+        return redirect(302, '/dashboard');
     }
-    return {};
+    
+    // If user is not logged in, show landing page
+    return {
+        isLoggedIn: false
+    };
 };
 
 export const actions: Actions = {

@@ -13,12 +13,12 @@
 	<Header {data} />
 
 	<!-- Main Content -->
-	<main class="flex-1 {validPathnames.includes(page.url.pathname) ? '' : 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8'}">
+	<main class="flex-1 {validPathnames.includes(page.url.pathname) ? (page.url.pathname === '/' && !data?.user ? '' : '') : 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8'}">
 		{@render children()}
 	</main>
 
-	<!-- Footer - Only show when user is logged in -->
-	{#if data.user}
+	<!-- Footer - Show when user is logged in OR on landing page -->
+	{#if data.user || (page.url.pathname === '/' && !data?.user)}
 		<Footer />
 	{/if}
 </div>

@@ -11,7 +11,28 @@
 	};
 </script>
 
-{#if page.url.pathname !== '/login' && page.url.pathname !== '/' && page.url.pathname !== '/logout'}
+{#if page.url.pathname === '/' && !data?.user}
+  <!-- Landing Page Header -->
+  <nav class="bg-white shadow-sm border-b fixed w-full top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <a href="/" class="flex items-center space-x-2">
+            <PenTool class="h-8 w-8 text-blue-600" />
+            <span class="text-xl font-bold text-gray-900">Writer Buddy</span>
+          </a>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <a href="#features" class="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">Features</a>
+          <a href="/login" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+            Sign In
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+{:else if page.url.pathname !== '/login' && page.url.pathname !== '/' && page.url.pathname !== '/logout'}
   <!-- Navigation Header -->
   <nav class="bg-white shadow-sm border-b">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
