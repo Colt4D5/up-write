@@ -32,13 +32,16 @@ export class ProjectService {
 		// Calculate current word count for each project
 		const projectsWithWordCounts = await Promise.all(
 			userProjects.map(async (proj) => {
-				// Get all notebooks for this project
+				// Get only notebooks that contribute to word count for this project
 				const notebooks = await db.select().from(notebook)
-					.where(eq(notebook.projectId, proj.id));
+					.where(and(
+						eq(notebook.projectId, proj.id),
+						eq(notebook.contributesToWordCount, true)
+					));
 
 				let currentWordCount = 0;
 				
-				// Calculate total word count from all documents in this project
+				// Calculate total word count from documents in contributing notebooks only
 				for (const nb of notebooks) {
 					const documents = await db.select({ wordCount: document.wordCount })
 						.from(document)
@@ -120,11 +123,11 @@ export class ProjectService {
 
 	private static async createDefaultNotebooks(projectId: string) {
 		const defaultNotebooks = [
-			{ title: 'Chapters', type: 'chapters' as const },
-			{ title: 'Characters', type: 'characters' as const },
-			{ title: 'Plot & Structure', type: 'plot' as const },
-			{ title: 'Research & Notes', type: 'research' as const },
-			{ title: 'General Notes', type: 'notes' as const }
+			{ title: 'Chapters', type: 'chapters' as const, contributesToWordCount: true },
+			{ title: 'Characters', type: 'characters' as const, contributesToWordCount: false },
+			{ title: 'Plot & Structure', type: 'plot' as const, contributesToWordCount: false },
+			{ title: 'Research & Notes', type: 'research' as const, contributesToWordCount: false },
+			{ title: 'General Notes', type: 'notes' as const, contributesToWordCount: false }
 		];
 
 		for (const [index, nb] of defaultNotebooks.entries()) {
@@ -133,7 +136,8 @@ export class ProjectService {
 				projectId,
 				title: nb.title,
 				type: nb.type,
-				sortOrder: index
+				sortOrder: index,
+				contributesToWordCount: nb.contributesToWordCount
 			});
 		}
 	}
@@ -163,6 +167,17 @@ export class NotebookService {
 	static async updateNotebook(notebookId: string, data: Partial<CreateNotebookData>) {
 		const [updated] = await db.update(notebook)
 			.set({ ...data, updatedAt: new Date() })
+			.where(eq(notebook.id, notebookId))
+			.returning();
+		return updated;
+	}
+
+	static async toggleWordCountContribution(notebookId: string, contributesToWordCount: boolean) {
+		const [updated] = await db.update(notebook)
+			.set({ 
+				contributesToWordCount,
+				updatedAt: new Date() 
+			})
 			.where(eq(notebook.id, notebookId))
 			.returning();
 		return updated;
@@ -248,16 +263,19 @@ export class StatisticsService {
 			const userProjects = await db.select().from(project)
 				.where(eq(project.userId, userId));
 
-			// Calculate total words from all documents in user's projects
+			// Calculate total words from documents in contributing notebooks only
 			let totalWordCount = 0;
 			
-			// Get all notebooks for user's projects
+			// Get only notebooks that contribute to word count for user's projects
 			const notebooks = await db.select()
 				.from(notebook)
 				.innerJoin(project, eq(notebook.projectId, project.id))
-				.where(eq(project.userId, userId));
+				.where(and(
+					eq(project.userId, userId),
+					eq(notebook.contributesToWordCount, true)
+				));
 
-			// Get word count from all documents in those notebooks
+			// Get word count from all documents in those contributing notebooks
 			for (const nb of notebooks) {
 				const documents = await db.select({ 
 					wordCount: document.wordCount

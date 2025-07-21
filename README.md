@@ -27,6 +27,7 @@ A comprehensive writing application for authors to organize and write books with
 - **Writing statistics**: Track daily word counts and writing time
 - **Progress visualization**: See your writing habits and productivity
 - **Goal tracking**: Set and monitor word count targets
+- **Selective word counting**: Choose which notebooks contribute to your project's word count (e.g., only chapters, not character notes or research)
 
 ### 👥 Character Development
 - **Character profiles**: Detailed character sheets with appearance, personality, backstory
@@ -149,6 +150,15 @@ Projects are organized hierarchically:
     - **Documents** (individual text files)
 
 This structure allows you to keep all aspects of your writing project organized and easily accessible.
+
+#### Word Count Contribution
+
+Each notebook can be configured to contribute (or not contribute) to the project's total word count:
+
+- **Contributing notebooks** (marked with 🎯): Words from documents in these notebooks count toward your project's progress
+- **Non-contributing notebooks** (marked with #): Used for notes, research, character development, etc. that don't count toward your writing goals
+- **Default behavior**: New projects have "Chapters" contributing to word count, while "Characters", "Plot & Structure", "Research & Notes", and "General Notes" do not
+- **Customizable**: Click the icon next to any notebook name to toggle whether it contributes to your word count
 
 ### Rich Text Editor
 

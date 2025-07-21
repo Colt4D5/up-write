@@ -19,7 +19,9 @@
 		PanelLeftClose,
 		PanelLeftOpen,
 		PanelRightClose,
-		PanelRightOpen
+		PanelRightOpen,
+		Target,
+		Hash
 	} from 'lucide-svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import AiSuggestions from '$lib/components/AiSuggestions.svelte';
@@ -338,6 +340,31 @@
 		aiAnalysis = { ...aiAnalysis };
 	}
 
+	async function toggleNotebookWordCountContribution(notebookId: string, currentValue: boolean) {
+		try {
+			const response = await fetch(`/api/notebooks/${notebookId}/word-count`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					contributesToWordCount: !currentValue
+				})
+			});
+
+			if (response.ok) {
+				// Update the local data
+				await invalidateAll();
+			} else {
+				const error = await response.json();
+				alert('Failed to update word count setting: ' + (error.message || 'Unknown error'));
+			}
+		} catch (error) {
+			console.error('Toggle word count error:', error);
+			alert('Failed to update word count setting. Please try again.');
+		}
+	}
+
 	// Filter notebooks based on search
 	let filteredNotebooks = $derived.by(() => {
 		return data.notebooks?.filter(notebook => {
@@ -392,6 +419,43 @@
 						<span>Target: {data.project.targetWordCount.toLocaleString()} words</span>
 					{/if}
 				</div>
+				
+				<!-- Current Word Count Display -->
+				{#if data.notebooks}
+					{@const contributingNotebooks = data.notebooks.filter(nb => nb.contributesToWordCount)}
+					{@const currentWordCount = contributingNotebooks.reduce((total, notebook) => 
+						total + (notebook.documents?.reduce((sum, doc) => sum + (doc.wordCount || 0), 0) || 0), 0
+					)}
+					{#if contributingNotebooks.length > 0}
+						<div class="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+							<div class="flex items-center justify-between">
+								<div class="flex items-center space-x-2">
+									<Target class="h-4 w-4 text-blue-600" />
+									<span class="text-sm font-medium text-blue-900">
+										Current: {currentWordCount.toLocaleString()} words
+									</span>
+								</div>
+								{#if data.project.targetWordCount}
+									<span class="text-xs text-blue-700">
+										{Math.round((currentWordCount / data.project.targetWordCount) * 100)}%
+									</span>
+								{/if}
+							</div>
+							<div class="mt-1 text-xs text-blue-600">
+								From: {contributingNotebooks.map(nb => nb.title).join(', ')}
+							</div>
+						</div>
+					{:else}
+						<div class="mt-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
+							<div class="flex items-center space-x-2">
+								<Hash class="h-4 w-4 text-gray-400" />
+								<span class="text-sm text-gray-600">
+									No notebooks contributing to word count
+								</span>
+							</div>
+						</div>
+					{/if}
+				{/if}
 			</div>
 
 			<!-- Search -->
@@ -432,9 +496,50 @@
 											({notebook.documents?.length || 0})
 										</span>
 									{/if}
+									<!-- Word Count Contribution Indicator -->
+									{#if notebook.contributesToWordCount}
+										<div 
+											class="flex-shrink-0 p-1 bg-green-100 text-green-600 rounded"
+											title="Contributes to project word count"
+										>
+											<Target class="h-3 w-3" />
+										</div>
+									{:else}
+										<div 
+											class="flex-shrink-0 p-1 bg-gray-100 text-gray-400 rounded"
+											title="Does not contribute to project word count"
+										>
+											<Hash class="h-3 w-3" />
+										</div>
+									{/if}
 								</div>
 								
 								<div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100">
+									<!-- Toggle Word Count Contribution -->
+									<div 
+										class="p-1 hover:bg-gray-200 rounded cursor-pointer" 
+										title={notebook.contributesToWordCount ? "Remove from word count" : "Include in word count"}
+										onclick={(e) => {
+											e.stopPropagation();
+											toggleNotebookWordCountContribution(notebook.id, notebook.contributesToWordCount);
+										}}
+										role="button"
+										tabindex="0"
+										onkeydown={(e) => {
+											if (e.key === 'Enter' || e.key === ' ') {
+												e.preventDefault();
+												e.stopPropagation();
+												toggleNotebookWordCountContribution(notebook.id, notebook.contributesToWordCount);
+											}
+										}}
+									>
+										{#if notebook.contributesToWordCount}
+											<Target class="h-3 w-3 text-green-600" />
+										{:else}
+											<Hash class="h-3 w-3 text-gray-400" />
+										{/if}
+									</div>
+									
 									<div 
 										class="p-1 hover:bg-gray-200 rounded cursor-pointer" 
 										title="Add document"
@@ -531,6 +636,12 @@
 							<span class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
 								{notebook.documents?.length}
 							</span>
+						{/if}
+						<!-- Word count contribution indicator -->
+						{#if notebook.contributesToWordCount}
+							<div class="absolute -bottom-1 -left-1 bg-green-100 text-green-600 rounded-full p-0.5">
+								<Target class="h-2 w-2" />
+							</div>
 						{/if}
 					</button>
 				{/each}

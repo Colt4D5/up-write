@@ -17,6 +17,7 @@ export interface CreateNotebookData {
 	title: string;
 	type: NotebookType;
 	parentId?: string;
+	contributesToWordCount?: boolean;
 }
 
 export interface CreateDocumentData {

@@ -37,6 +37,7 @@ export const notebook = sqliteTable('notebook', {
 	type: text('type').notNull(), // 'chapters', 'characters', 'plot', 'research', 'notes'
 	parentId: text('parent_id'),
 	sortOrder: integer('sort_order').notNull().$default(() => 0),
+	contributesToWordCount: integer('contributes_to_word_count', { mode: 'boolean' }).notNull().$default(() => false),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$default(() => new Date()),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$default(() => new Date())
 });
