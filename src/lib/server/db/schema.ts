@@ -8,6 +8,11 @@ export const user = sqliteTable('user', {
 	email: text('email').unique(),
 	displayName: text('display_name'),
 	profileImage: text('profile_image'),
+	// Subscription and AI access
+	subscriptionTier: text('subscription_tier').notNull().$default(() => 'free'), // 'free', 'premium', 'pro'
+	subscriptionStatus: text('subscription_status').notNull().$default(() => 'active'), // 'active', 'cancelled', 'expired'
+	subscriptionExpiresAt: integer('subscription_expires_at', { mode: 'timestamp' }),
+	aiAccessEnabled: integer('ai_access_enabled', { mode: 'boolean' }).notNull().$default(() => false),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$default(() => new Date()),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$default(() => new Date())
 });

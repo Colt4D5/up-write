@@ -1,13 +1,27 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { BookOpen, PenTool, User, Settings, Home, LogOut, Users } from 'lucide-svelte';
+	import { BookOpen, PenTool, User, Settings, Home, LogOut, Users, Crown } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
+	import SubscriptionModal from './SubscriptionModal.svelte';
 
   const { data } = $props();
+	let showSubscriptionModal = $state(false);
 
 	// Get profile image URL with fallback to default
 	const getProfileImageUrl = (profileImage: string | null) => {
 		return profileImage || '/default-avatar.svg';
+	};
+
+	// Get tier display info
+	const getTierInfo = (tier: string) => {
+		switch (tier) {
+			case 'premium':
+				return { name: 'Premium', color: 'text-purple-600' };
+			case 'pro':
+				return { name: 'Pro', color: 'text-yellow-600' };
+			default:
+				return { name: 'Free', color: 'text-gray-600' };
+		}
 	};
 </script>
 
@@ -57,6 +71,20 @@
             <Users class="h-4 w-4" />
             <span>Friends</span>
           </a>
+          
+          <!-- Subscription Settings -->
+          {#if data?.user}
+            {@const tierInfo = getTierInfo(data.user.subscriptionTier)}
+            <button 
+              onclick={() => showSubscriptionModal = true}
+              data-subscription-trigger
+              class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 hover-lift"
+            >
+              <Crown class="h-4 w-4" />
+              <span class={tierInfo.color}>{tierInfo.name}</span>
+            </button>
+          {/if}
+          
           <a href="/profile" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 hover-lift">
             {#if data?.user?.profileImage}
               <img 
@@ -79,4 +107,13 @@
       </div>
     </div>
   </nav>
+{/if}
+
+<!-- Subscription Modal -->
+{#if showSubscriptionModal && data?.user}
+  <SubscriptionModal 
+    user={data.user} 
+    aiAccess={data.aiAccess} 
+    onClose={() => showSubscriptionModal = false} 
+  />
 {/if}

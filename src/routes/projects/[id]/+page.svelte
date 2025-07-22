@@ -21,10 +21,13 @@
 		PanelRightClose,
 		PanelRightOpen,
 		Target,
-		Hash
+		Hash,
+		Eye
 	} from 'lucide-svelte';
 	import RichTextEditor from '$lib/components/RichTextEditor.svelte';
 	import AiSuggestions from '$lib/components/AiSuggestions.svelte';
+	import InlineAiSuggestions from '$lib/components/InlineAiSuggestions.svelte';
+	import SuggestionDetailModal from '$lib/components/SuggestionDetailModal.svelte';
 	import CreateNotebookModal from '$lib/components/CreateNotebookModal.svelte';
 	import { formatDate, countWords } from '$lib/utils';
 	import { invalidateAll } from '$app/navigation';
@@ -40,9 +43,15 @@
 	let expandedNotebooks = $state<Set<string>>(new Set());
 	let searchQuery = $state('');
 	
+	// Inline AI suggestions state
+	let showInlineSuggestions = $state(true);
+	let showSuggestionLegend = $state(false);
+	let selectedSuggestion = $state<AiAnalysisResult['suggestions'][0] | null>(null);
+	let showSuggestionModal = $state(false);
+	
 	// Sidebar visibility state
 	let leftSidebarVisible = $state(true);
-	let rightSidebarVisible = $state(true);
+	let rightSidebarVisible = $state(false); // Hide AI sidebar by default
 	
 	// New document creation modal state
 	let showCreateDocModal = $state(false);
@@ -349,6 +358,13 @@
 	async function handleAnalyzeText(text: string) {
 		if (!text.trim()) return;
 		
+		// Check if user has AI access
+		if (!data.aiAccess.hasAccess) {
+			// Show upgrade message
+			alert(getAiAccessMessage());
+			return;
+		}
+		
 		isAnalyzing = true;
 		try {
 			const response = await fetch('/api/ai/analyze', {
@@ -361,6 +377,14 @@
 
 			if (response.ok) {
 				aiAnalysis = await response.json();
+			} else {
+				const error = await response.json();
+				if (response.status === 403) {
+					// Handle AI access denied
+					alert(error.message || 'AI features are not available for your account');
+				} else {
+					console.error('Analysis error:', error);
+				}
 			}
 		} catch (error) {
 			console.error('Analysis error:', error);
@@ -369,13 +393,47 @@
 		}
 	}
 
+	function getAiAccessMessage(): string {
+		switch (data.aiAccess.reason) {
+			case 'no_api_key':
+				return 'AI features are currently unavailable. Please contact support.';
+			case 'free_tier':
+				return 'AI writing assistance is available with Premium and Pro plans. Upgrade your account to access advanced writing suggestions, grammar checking, and style improvements.';
+			case 'subscription_expired':
+				return 'Your subscription has expired. Please renew your Premium or Pro plan to continue using AI features.';
+			case 'access_disabled':
+				return 'AI features have been disabled for your account. Contact support if you believe this is an error.';
+			default:
+				return 'AI features are currently unavailable.';
+		}
+	}
+
+	function getTierDisplayName(tier: string): string {
+		switch (tier) {
+			case 'free': return 'Free';
+			case 'premium': return 'Premium';
+			case 'pro': return 'Pro';
+			default: return 'Unknown';
+		}
+	}
+
 	function handleAcceptSuggestion(index: number) {
 		if (!aiAnalysis || !aiAnalysis.suggestions[index]) return;
 		
 		const suggestion = aiAnalysis.suggestions[index];
-		if (suggestion.suggestedText) {
-			// This would implement the actual text replacement in the editor
-			console.log('Accept suggestion:', suggestion);
+		if (suggestion.suggestedText && selectedDocument) {
+			// Replace the text in the document content
+			const { startPosition, endPosition, suggestedText } = suggestion;
+			const beforeText = documentContent.substring(0, startPosition);
+			const afterText = documentContent.substring(endPosition);
+			const newContent = beforeText + suggestedText + afterText;
+			
+			// Update the content
+			handleContentUpdate(newContent);
+			
+			// Remove the accepted suggestion from the analysis
+			aiAnalysis.suggestions.splice(index, 1);
+			aiAnalysis = { ...aiAnalysis };
 		}
 	}
 
@@ -384,6 +442,42 @@
 		
 		aiAnalysis.suggestions.splice(index, 1);
 		aiAnalysis = { ...aiAnalysis };
+	}
+
+	function handleSuggestionClick(suggestionIndex: number) {
+		if (!aiAnalysis || !aiAnalysis.suggestions[suggestionIndex]) return;
+		
+		selectedSuggestion = aiAnalysis.suggestions[suggestionIndex];
+		showSuggestionModal = true;
+	}
+
+	function handleToggleSuggestionLegend() {
+		showSuggestionLegend = !showSuggestionLegend;
+	}
+
+	function handleCloseSuggestionModal() {
+		showSuggestionModal = false;
+		selectedSuggestion = null;
+	}
+
+	function handleAcceptModalSuggestion() {
+		if (!selectedSuggestion || !aiAnalysis) return;
+		
+		const index = aiAnalysis.suggestions.findIndex(s => s === selectedSuggestion);
+		if (index !== -1) {
+			handleAcceptSuggestion(index);
+		}
+		handleCloseSuggestionModal();
+	}
+
+	function handleDismissModalSuggestion() {
+		if (!selectedSuggestion || !aiAnalysis) return;
+		
+		const index = aiAnalysis.suggestions.findIndex(s => s === selectedSuggestion);
+		if (index !== -1) {
+			handleDismissSuggestion(index);
+		}
+		handleCloseSuggestionModal();
 	}
 
 	async function toggleNotebookWordCountContribution(notebookId: string, currentValue: boolean) {
@@ -433,7 +527,6 @@
 	<div class="bg-white border-r border-gray-200 flex flex-col transition-all duration-300 relative {leftSidebarVisible ? 'w-80' : 'w-16'}">
 		{#if leftSidebarVisible}
 			<!-- Full Sidebar Content -->
-			<!-- Project Header -->
 			<div class="p-4 border-b border-gray-200">
 				<div class="flex items-center justify-between mb-2">
 					<h1 class="text-lg font-semibold text-gray-900 truncate" title={data.project.title}>
@@ -446,9 +539,6 @@
 							title="New Document"
 						>
 							<Plus class="h-4 w-4" />
-						</button>
-						<button class="p-1 text-gray-400 hover:text-gray-600 rounded">
-							<Settings class="h-4 w-4" />
 						</button>
 					</div>
 				</div>
@@ -764,6 +854,23 @@
 							</div>
 						</div>
 						<div class="flex items-center space-x-2">
+							<!-- Toggle Inline Suggestions -->
+							{#if data.aiAccess.hasAccess && aiAnalysis && aiAnalysis.suggestions.length > 0}
+								<button
+									onclick={() => showInlineSuggestions = !showInlineSuggestions}
+									class="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium border rounded-md transition-colors {showInlineSuggestions ? 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}"
+									title={showInlineSuggestions ? 'Switch to editor view' : 'Show inline suggestions'}
+								>
+									<Eye class="h-3 w-3" />
+									<span>{showInlineSuggestions ? 'Editor' : 'Suggestions'}</span>
+								</button>
+							{:else if !data.aiAccess.hasAccess}
+								<!-- No AI access message -->
+								<div class="px-3 py-1.5 text-sm text-gray-500 italic">
+									AI features unavailable
+								</div>
+							{/if}
+							
 							<!-- Save Button -->
 							<button 
 								class="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -783,15 +890,38 @@
 				</div>
 
 				<!-- Editor Area -->
-				<div class="flex-1 p-4">
-					<RichTextEditor
-						content={documentContent}
-						onUpdate={handleContentUpdate}
-						onAnalyze={handleAnalyzeText}
-						placeholder="Start writing your story..."
-						class="h-full"
-						projectId={data.project.id}
-					/>
+				<div class="flex-1 p-4 relative">
+					{#if showInlineSuggestions && data.aiAccess.hasAccess && aiAnalysis && aiAnalysis.suggestions.length > 0}
+						<!-- Inline AI Suggestions View -->
+						<div class="h-full border border-gray-300 rounded-lg p-4 bg-white overflow-y-auto">
+							<div class="mb-4 text-sm text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
+								<div class="flex items-center space-x-2">
+									<Eye class="h-4 w-4 text-blue-600" />
+									<span class="font-medium text-blue-900">Suggestion Preview Mode</span>
+								</div>
+								<p class="mt-1 text-blue-800">
+									Click on underlined text to see detailed suggestions. Switch to Editor mode to make changes.
+								</p>
+							</div>
+							<InlineAiSuggestions 
+								analysis={aiAnalysis}
+								content={documentContent}
+								onSuggestionClick={handleSuggestionClick}
+								showLegend={showSuggestionLegend}
+								onToggleLegend={handleToggleSuggestionLegend}
+							/>
+						</div>
+					{:else}
+						<!-- Regular Rich Text Editor -->
+						<RichTextEditor
+							content={documentContent}
+							onUpdate={handleContentUpdate}
+							onAnalyze={data.aiAccess.hasAccess ? handleAnalyzeText : undefined}
+							placeholder="Start writing your story..."
+							class="h-full"
+							projectId={data.project.id}
+						/>
+					{/if}
 				</div>
 			{:else}
 				<!-- Empty State -->
@@ -828,12 +958,84 @@
 				</div>
 				
 				<div class="p-4">
-					<AiSuggestions
-						analysis={aiAnalysis}
-						isLoading={isAnalyzing}
-						onAcceptSuggestion={handleAcceptSuggestion}
-						onDismissSuggestion={handleDismissSuggestion}
-					/>
+					{#if !data.aiAccess.hasAccess}
+						<!-- AI Access Restricted Notice -->
+						<div class="mb-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+							<div class="flex items-start space-x-3">
+								{#if data.aiAccess.reason === 'free_tier'}
+									<Settings class="h-6 w-6 text-purple-600 mt-0.5 flex-shrink-0" />
+									<div>
+										<h4 class="text-lg font-semibold text-gray-900 mb-2">Unlock AI Writing Assistant</h4>
+										<p class="text-gray-700 mb-3">
+											Get intelligent writing suggestions, grammar checking, and style improvements with Premium or Pro.
+										</p>
+										<div class="space-y-2 text-sm text-gray-600 mb-4">
+											<div class="flex items-center space-x-2">
+												<Check class="h-4 w-4 text-green-500" />
+												<span>Grammar & spelling corrections</span>
+											</div>
+											<div class="flex items-center space-x-2">
+												<Check class="h-4 w-4 text-green-500" />
+												<span>Style & clarity improvements</span>
+											</div>
+											<div class="flex items-center space-x-2">
+												<Check class="h-4 w-4 text-green-500" />
+												<span>Real-time writing feedback</span>
+											</div>
+											<div class="flex items-center space-x-2">
+												<Check class="h-4 w-4 text-green-500" />
+												<span>Advanced sentence structure analysis</span>
+											</div>
+										</div>
+										<p class="text-sm text-gray-600">
+											Click on your tier name in the header to manage your subscription and upgrade.
+										</p>
+									</div>
+								{:else if data.aiAccess.reason === 'no_api_key'}
+									<AlertCircle class="h-6 w-6 text-orange-600 mt-0.5 flex-shrink-0" />
+									<div>
+										<h4 class="text-lg font-semibold text-gray-900 mb-2">AI Features Unavailable</h4>
+										<p class="text-gray-700">
+											AI writing assistance is temporarily unavailable. Please contact support for assistance.
+										</p>
+									</div>
+								{:else}
+									<Settings class="h-6 w-6 text-gray-600 mt-0.5 flex-shrink-0" />
+									<div>
+										<h4 class="text-lg font-semibold text-gray-900 mb-2">AI Access Restricted</h4>
+										<p class="text-gray-700">
+											{getAiAccessMessage()}
+										</p>
+									</div>
+								{/if}
+							</div>
+						</div>
+					{:else}
+						<!-- Regular AI features for users with access -->
+						{#if aiAnalysis && aiAnalysis.suggestions.length > 0}
+							<!-- Inline Suggestions Notice -->
+							<div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+								<div class="flex items-start space-x-2">
+									<Eye class="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+									<div class="text-sm">
+										<p class="text-blue-900 font-medium">Inline Suggestions Active</p>
+										<p class="text-blue-700 mt-1">
+											Click underlined text in your document to see detailed suggestions, or view them all here.
+										</p>
+									</div>
+								</div>
+							</div>
+						{/if}
+					{/if}
+					
+					{#if data.aiAccess.hasAccess}
+						<AiSuggestions
+							analysis={aiAnalysis}
+							isLoading={isAnalyzing}
+							onAcceptSuggestion={handleAcceptSuggestion}
+							onDismissSuggestion={handleDismissSuggestion}
+						/>
+					{/if}
 				</div>
 			</div>
 		{:else}
@@ -846,6 +1048,13 @@
 				>
 					<PanelRightOpen class="h-4 w-4" />
 				</button>
+				
+				{#if aiAnalysis && aiAnalysis.suggestions.length > 0}
+					<!-- Suggestion count indicator -->
+					<div class="absolute top-12 -left-4 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center shadow-sm">
+						{aiAnalysis.suggestions.length}
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -946,4 +1155,13 @@
 	onClose={closeCreateNotebookModal}
 	onSubmit={createNotebook}
 	isSubmitting={isCreatingNotebook}
+/>
+
+<!-- Suggestion Detail Modal -->
+<SuggestionDetailModal
+	visible={showSuggestionModal}
+	suggestion={selectedSuggestion}
+	onClose={handleCloseSuggestionModal}
+	onAccept={handleAcceptModalSuggestion}
+	onDismiss={handleDismissModalSuggestion}
 />

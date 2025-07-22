@@ -5,11 +5,24 @@ export function generateId(): string {
 }
 
 export function formatDate(date: Date): string {
-	return date.toLocaleDateString();
+	// Use a consistent format to avoid server/client hydration mismatches
+	return date.toLocaleDateString('en-US', {
+		year: 'numeric',
+		month: 'short',
+		day: 'numeric'
+	});
 }
 
 export function formatDateTime(date: Date): string {
-	return date.toLocaleString();
+	// Use a consistent format to avoid server/client hydration mismatches
+	return date.toLocaleString('en-US', {
+		year: 'numeric',
+		month: 'short',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: true
+	});
 }
 
 export function countWords(text: string): number {

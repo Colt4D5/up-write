@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { User, Mail, Hash, Calendar, Save, AlertCircle, CheckCircle, Lock, Eye, EyeOff, Camera, Cake } from 'lucide-svelte';
+	import { User, Mail, Hash, Calendar, Save, AlertCircle, CheckCircle, Lock, Eye, EyeOff, Camera, Cake, Crown, Zap, X } from 'lucide-svelte';
 	import { calculateAge, formatBirthday } from '$lib/utils';
+	import SubscriptionModal from '$lib/components/SubscriptionModal.svelte';
 	import type { PageServerData, ActionData } from './$types';
 
 	let { data, form }: { 
@@ -15,11 +16,37 @@
 	let showNewPassword = $state(false);
 	let showConfirmPassword = $state(false);
 	let isUploadingAvatar = $state(false);
+	let showSubscriptionModal = $state(false);
 
 	// Get profile image URL with fallback to default
 	const getProfileImageUrl = (profileImage: string | null) => {
 		return profileImage || '/default-avatar.svg';
 	};
+
+	function getTierDisplayName(tier: string): string {
+		switch (tier) {
+			case 'free': return 'Free';
+			case 'premium': return 'Premium';
+			case 'pro': return 'Pro';
+			default: return 'Free';
+		}
+	}
+
+	function getTierIcon(tier: string) {
+		switch (tier) {
+			case 'premium': return Crown;
+			case 'pro': return Zap;
+			default: return Lock;
+		}
+	}
+
+	function getTierColor(tier: string): string {
+		switch (tier) {
+			case 'premium': return 'text-purple-600 bg-purple-100';
+			case 'pro': return 'text-yellow-600 bg-yellow-100';
+			default: return 'text-gray-600 bg-gray-100';
+		}
+	}
 
 	// Create reactive form values that properly handle successful submissions
 	let formUsername = $derived(
@@ -34,6 +61,9 @@
 	let formBirthday = $derived(
 		(form && !form.success && form.birthday !== undefined) ? form.birthday : data?.user?.birthday ?? ''
 	);
+
+	// Add this derived variable for TierIcon
+	let TierIcon = $derived(getTierIcon(data?.user?.subscriptionTier || 'free'));
 </script>
 
 <svelte:head>
@@ -282,6 +312,93 @@
 		</form>
 	</div>
 
+	<!-- Subscription Management Section -->
+	<div class="mt-8 bg-white shadow-lg rounded-lg">
+		<div class="p-6 border-b border-gray-200">
+			<h2 class="text-xl font-semibold text-gray-900">Subscription Plan</h2>
+			<div class="flex items-center justify-between">
+				<div class="flex items-center space-x-4">
+					<!-- See script change below -->
+					<div class="p-3 rounded-lg {getTierColor(data?.user?.subscriptionTier || 'free')}">
+						<TierIcon class="h-6 w-6" />
+					</div>
+					<div>
+						<h3 class="text-lg font-semibold text-gray-900">
+							{getTierDisplayName(data?.user?.subscriptionTier || 'free')} Plan
+						</h3>
+						<p class="text-sm text-gray-600">
+							{#if data?.user?.subscriptionTier === 'free'}
+								You're currently on our free plan. Upgrade to unlock premium features!
+							{:else if data?.user?.subscriptionTier === 'premium'}
+								You have access to AI writing assistance and advanced features.
+							{:else if data?.user?.subscriptionTier === 'pro'}
+								You have unlimited access to all WriterBuddy features.
+							{:else}
+								You're currently on our free plan.
+							{/if}
+						</p>
+						{#if data?.user?.subscriptionStatus}
+							<p class="text-xs text-gray-500 mt-1">
+								Status: {data.user.subscriptionStatus}
+								{#if data?.user?.subscriptionExpiresAt}
+									• Next billing: {new Date(data.user.subscriptionExpiresAt).toLocaleDateString()}
+								{/if}
+							</p>
+						{/if}
+					</div>
+				</div>
+				<div class="flex flex-col space-y-2">
+					<button
+						onclick={() => showSubscriptionModal = true}
+						class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
+					>
+						{#if data?.user?.subscriptionTier === 'free'}
+							<Crown class="h-4 w-4 mr-2" />
+							Upgrade Plan
+						{:else}
+							<Crown class="h-4 w-4 mr-2" />
+							Manage Plan
+						{/if}
+					</button>
+					{#if data?.user?.subscriptionTier !== 'free'}
+						<button
+							onclick={() => alert('Contact support to cancel your subscription')}
+							class="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition"
+						>
+							<X class="h-4 w-4 mr-2" />
+							Cancel Plan
+						</button>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Feature Comparison -->
+			{#if data?.user?.subscriptionTier === 'free'}
+				<div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+					<h4 class="text-sm font-semibold text-blue-900 mb-2">Unlock Premium Features</h4>
+					<ul class="text-sm text-blue-800 space-y-1">
+						<li class="flex items-center space-x-2">
+							<CheckCircle class="h-4 w-4 text-blue-600" />
+							<span>AI writing suggestions and grammar checking</span>
+						</li>
+						<li class="flex items-center space-x-2">
+							<CheckCircle class="h-4 w-4 text-blue-600" />
+							<span>Unlimited projects and documents</span>
+						</li>
+						<li class="flex items-center space-x-2">
+							<CheckCircle class="h-4 w-4 text-blue-600" />
+							<span>Advanced analytics and progress tracking</span>
+						</li>
+						<li class="flex items-center space-x-2">
+							<CheckCircle class="h-4 w-4 text-blue-600" />
+							<span>Priority support and exclusive features</span>
+						</li>
+					</ul>
+				</div>
+			{/if}
+		</div>
+	</div>
+
 	<!-- Password Change Section -->
 	<div class="mt-8 bg-white shadow-lg rounded-lg">
 		<div class="p-6 border-b border-gray-200">
@@ -437,3 +554,12 @@
 		</div>
 	</div>
 </div>
+
+<!-- Subscription Modal -->
+{#if showSubscriptionModal}
+	<SubscriptionModal 
+		user={data?.user} 
+		aiAccess={data?.aiAccess}
+		onClose={() => showSubscriptionModal = false}
+	/>
+{/if}

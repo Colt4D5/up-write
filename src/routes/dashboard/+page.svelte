@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { BookOpen, PlusCircle, BarChart3, Clock, Target, TrendingUp } from 'lucide-svelte';
 	import { fly } from 'svelte/transition';
-	import { formatWordCount } from '$lib/utils';
+	import { formatWordCount, formatDate } from '$lib/utils';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -30,7 +30,7 @@
 	<title>Dashboard - WriterBuddy</title>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 	<!-- Welcome Header -->
 	<div 
 		class="bg-white rounded-lg shadow p-6 hover-lift"
@@ -151,7 +151,7 @@
 								</div>
 								<div class="text-right">
 									<p class="text-sm font-medium text-gray-900">{project.status}</p>
-									<p class="text-xs text-gray-500">Updated {new Date(project.updatedAt).toLocaleDateString()}</p>
+									<p class="text-xs text-gray-500">Updated {formatDate(new Date(project.updatedAt))}</p>
 								</div>
 							</div>
 						{/each}

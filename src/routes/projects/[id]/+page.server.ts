@@ -1,4 +1,6 @@
 import { ProjectService, NotebookService, DocumentService } from '$lib/server/services';
+import { AiWritingService } from '$lib/server/ai';
+import { SubscriptionService } from '$lib/server/subscription';
 import { redirect, error } from '@sveltejs/kit';
 
 export const load = async ({ params, locals }) => {
@@ -25,9 +27,22 @@ export const load = async ({ params, locals }) => {
 			})
 		);
 
+		// Get AI access information
+		const aiAccessInfo = AiWritingService.getAccessInfo(locals.user);
+		const userTierFeatures = SubscriptionService.getTierFeatures(locals.user.subscriptionTier);
+
 		return {
 			project,
-			notebooks: notebooksWithDocuments
+			notebooks: notebooksWithDocuments,
+			user: {
+				id: locals.user.id,
+				username: locals.user.username,
+				displayName: locals.user.displayName,
+				subscriptionTier: locals.user.subscriptionTier,
+				aiAccessEnabled: locals.user.aiAccessEnabled
+			},
+			aiAccess: aiAccessInfo,
+			tierFeatures: userTierFeatures
 		};
 	} catch (err) {
 		console.error('Project load error:', err);

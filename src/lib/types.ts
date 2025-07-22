@@ -2,7 +2,7 @@ export type NotebookType = 'chapters' | 'characters' | 'plot' | 'research' | 'no
 
 export type ProjectStatus = 'draft' | 'in_progress' | 'completed' | 'published';
 
-export type SuggestionType = 'grammar' | 'style' | 'structure' | 'clarity' | 'pacing';
+export type SuggestionType = 'grammar' | 'spelling' | 'style' | 'structure' | 'clarity' | 'pacing' | 'passive_voice' | 'continuity' | 'weak_language' | 'repetition';
 
 export type SuggestionSeverity = 'low' | 'medium' | 'high';
 

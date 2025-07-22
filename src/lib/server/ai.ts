@@ -1,19 +1,58 @@
 import OpenAI from 'openai';
 import { env } from '$env/dynamic/private';
 import type { AiAnalysisResult, SuggestionType, SuggestionSeverity } from '$lib/types';
+import type { User } from './db/schema';
+import { SubscriptionService } from './subscription';
 
 const openai = new OpenAI({
 	apiKey: env.OPENAI_API_KEY
 });
 
 export class AiWritingService {
-	static async analyzeText(text: string): Promise<AiAnalysisResult> {
+	/**
+	 * Check if AI features are available for the user
+	 */
+	static isAvailable(user?: User): boolean {
+		if (!env.OPENAI_API_KEY) {
+			return false;
+		}
+		
+		if (!user) {
+			return false;
+		}
+
+		const accessInfo = SubscriptionService.checkAiAccess(user);
+		return accessInfo.hasAccess;
+	}
+
+	/**
+	 * Get access information for a user
+	 */
+	static getAccessInfo(user?: User) {
+		if (!user) {
+			return {
+				hasAccess: false,
+				reason: 'not_authenticated',
+				tier: 'free'
+			};
+		}
+
+		return SubscriptionService.checkAiAccess(user);
+	}
+
+	static async analyzeText(text: string, user?: User): Promise<AiAnalysisResult> {
 		if (!text.trim()) {
 			return {
 				suggestions: [],
 				overallScore: 100,
 				wordCount: 0
 			};
+		}
+
+		// Check access first
+		if (!this.isAvailable(user)) {
+			// For users without AI access, return basic analysis
+			return this.basicAnalysis(text);
 		}
 
 		try {
@@ -84,7 +123,13 @@ Focus on actionable, specific feedback that will help the author improve their w
 		}
 	}
 
-	static async suggestImprovement(originalText: string, context?: string): Promise<string> {
+	static async suggestImprovement(originalText: string, context?: string, user?: User): Promise<string> {
+		// Check access first
+		if (!this.isAvailable(user)) {
+			// Return original text for users without AI access
+			return originalText;
+		}
+
 		try {
 			const completion = await openai.chat.completions.create({
 				model: 'gpt-4',
@@ -118,6 +163,29 @@ Focus on actionable, specific feedback that will help the author improve their w
 		const suggestions: AiAnalysisResult['suggestions'] = [];
 		const words = text.trim().split(/\s+/).length;
 		
+		// Basic spelling errors (common mistakes)
+		const spellingPatterns = [
+			{ pattern: /\bteh\b/gi, correct: 'the', type: 'spelling' as SuggestionType },
+			{ pattern: /\badnwer\b/gi, correct: 'answer', type: 'spelling' as SuggestionType },
+			{ pattern: /\brecieve\b/gi, correct: 'receive', type: 'spelling' as SuggestionType },
+			{ pattern: /\boccured\b/gi, correct: 'occurred', type: 'spelling' as SuggestionType }
+		];
+
+		for (const { pattern, correct, type } of spellingPatterns) {
+			let match;
+			while ((match = pattern.exec(text)) !== null) {
+				suggestions.push({
+					type,
+					severity: 'high' as SuggestionSeverity,
+					message: `Spelling error: "${match[0]}" should be "${correct}".`,
+					originalText: match[0],
+					suggestedText: correct,
+					startPosition: match.index,
+					endPosition: match.index + match[0].length
+				});
+			}
+		}
+		
 		// Basic passive voice detection
 		const passivePatterns = [
 			/\b(was|were|is|are|been|being)\s+\w+ed\b/gi,
@@ -128,8 +196,8 @@ Focus on actionable, specific feedback that will help the author improve their w
 			let match;
 			while ((match = pattern.exec(text)) !== null) {
 				suggestions.push({
-					type: 'style',
-					severity: 'medium',
+					type: 'passive_voice' as SuggestionType,
+					severity: 'medium' as SuggestionSeverity,
 					message: 'Consider using active voice instead of passive voice for stronger, more direct writing.',
 					originalText: match[0],
 					startPosition: match.index,
@@ -138,27 +206,99 @@ Focus on actionable, specific feedback that will help the author improve their w
 			}
 		}
 
-		// Basic repetition detection
-		const wordFreq: Record<string, number> = {};
-		const textWords = text.toLowerCase().match(/\b\w+\b/g) || [];
-		
-		for (const word of textWords) {
-			if (word.length > 4) { // Only check longer words
-				wordFreq[word] = (wordFreq[word] || 0) + 1;
+		// Weak language patterns
+		const weakLanguagePatterns = [
+			{ pattern: /\bvery\s+\w+/gi, message: 'Consider using a stronger adjective instead of "very + adjective".' },
+			{ pattern: /\bquite\s+\w+/gi, message: 'The word "quite" can weaken your statement. Consider removing it or using a stronger word.' },
+			{ pattern: /\bsomewhat\b/gi, message: '"Somewhat" is vague. Be more specific.' },
+			{ pattern: /\bkind of\b/gi, message: '"Kind of" is informal and vague. Be more precise.' },
+			{ pattern: /\bsort of\b/gi, message: '"Sort of" is informal and vague. Be more precise.' }
+		];
+
+		for (const { pattern, message } of weakLanguagePatterns) {
+			let match;
+			while ((match = pattern.exec(text)) !== null) {
+				suggestions.push({
+					type: 'weak_language' as SuggestionType,
+					severity: 'low' as SuggestionSeverity,
+					message,
+					originalText: match[0],
+					startPosition: match.index,
+					endPosition: match.index + match[0].length
+				});
 			}
 		}
 
-		for (const [word, count] of Object.entries(wordFreq)) {
-			if (count > 3) {
+		// Grammar patterns
+		const grammarPatterns = [
+			{ pattern: /\bits\s+going\s+to\s+affect/gi, correct: "it's going to affect", message: "Missing apostrophe in contraction." },
+			{ pattern: /\byour\s+going\b/gi, correct: "you're going", message: 'Should be "you\'re" (you are).' },
+			{ pattern: /\bshould\s+of\b/gi, correct: "should have", message: 'Should be "should have", not "should of".' }
+		];
+
+		for (const { pattern, correct, message } of grammarPatterns) {
+			let match;
+			while ((match = pattern.exec(text)) !== null) {
 				suggestions.push({
-					type: 'style',
-					severity: 'low',
-					message: `The word "${word}" appears ${count} times. Consider using synonyms for variety.`,
-					originalText: word,
-					startPosition: text.toLowerCase().indexOf(word),
-					endPosition: text.toLowerCase().indexOf(word) + word.length
+					type: 'grammar' as SuggestionType,
+					severity: 'high' as SuggestionSeverity,
+					message,
+					originalText: match[0],
+					suggestedText: correct,
+					startPosition: match.index,
+					endPosition: match.index + match[0].length
 				});
 			}
+		}
+
+		// Basic repetition detection
+		const wordFreq: Record<string, { count: number; positions: number[] }> = {};
+		const textWords = text.toLowerCase().match(/\b\w+\b/g) || [];
+		let currentPos = 0;
+		
+		for (const word of textWords) {
+			if (word.length > 4) { // Only check longer words
+				const pos = text.toLowerCase().indexOf(word, currentPos);
+				if (!wordFreq[word]) {
+					wordFreq[word] = { count: 0, positions: [] };
+				}
+				wordFreq[word].count++;
+				wordFreq[word].positions.push(pos);
+				currentPos = pos + word.length;
+			}
+		}
+
+		for (const [word, { count, positions }] of Object.entries(wordFreq)) {
+			if (count > 3 && positions.length > 0) {
+				suggestions.push({
+					type: 'repetition' as SuggestionType,
+					severity: 'low' as SuggestionSeverity,
+					message: `The word "${word}" appears ${count} times. Consider using synonyms for variety.`,
+					originalText: word,
+					startPosition: positions[0],
+					endPosition: positions[0] + word.length
+				});
+			}
+		}
+
+		// Structure issues - long sentences
+		const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+		let sentenceStart = 0;
+		
+		for (const sentence of sentences) {
+			const sentenceWords = sentence.trim().split(/\s+/).length;
+			if (sentenceWords > 30) {
+				const startPos = text.indexOf(sentence.trim(), sentenceStart);
+				suggestions.push({
+					type: 'structure' as SuggestionType,
+					severity: 'medium' as SuggestionSeverity,
+					message: `This sentence is very long (${sentenceWords} words). Consider breaking it into shorter sentences for better readability.`,
+					originalText: sentence.trim(),
+					startPosition: startPos,
+					endPosition: startPos + sentence.trim().length
+				});
+			}
+			sentenceStart += sentence.length + 1;
 		}
 
 		return {
