@@ -23,13 +23,9 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 			activityData = generateSampleActivityData();
 		}
 
-		// Determine if this is a new user (created within last 24 hours and has no projects or writing activity)
-		const userCreatedAt = new Date(locals.user.createdAt);
-		const now = new Date();
-		const timeSinceCreation = now.getTime() - userCreatedAt.getTime();
-		const isNewAccount = timeSinceCreation < 24 * 60 * 60 * 1000; // Less than 24 hours old
+		// Determine if this is a new user (has no projects or writing activity)
 		const hasNoActivity = recentProjects.length === 0 && (stats?.totalWords || 0) === 0;
-		const isFirstTimeUser = isNewAccount && hasNoActivity;
+		const isFirstTimeUser = hasNoActivity;
 
 		return {
 			user: locals.user,

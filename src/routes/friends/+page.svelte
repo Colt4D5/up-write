@@ -248,15 +248,27 @@
 				{#if data.socialFeed.length === 0}
 					<div class="text-center py-12">
 						<Users class="h-16 w-16 text-gray-300 mx-auto mb-4" />
-						<h3 class="text-lg font-medium text-gray-900 mb-2">No activity yet</h3>
-						<p class="text-gray-500 mb-4">Add some friends to see their writing activity here!</p>
-						<button
-							onclick={openAddFriendModal}
-							class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-						>
-							<UserPlus class="h-4 w-4 mr-2" />
-							Add Your First Friend
-						</button>
+						{#if data.friends.length === 0}
+							<h3 class="text-lg font-medium text-gray-900 mb-2">No activity yet</h3>
+							<p class="text-gray-500 mb-4">Add some friends to see their writing activity here!</p>
+							<button
+								onclick={openAddFriendModal}
+								class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+							>
+								<UserPlus class="h-4 w-4 mr-2" />
+								Add Your First Friend
+							</button>
+						{:else}
+							<h3 class="text-lg font-medium text-gray-900 mb-2">There is currently no activity</h3>
+							<p class="text-gray-500 mb-4">Your friends haven't shared any writing updates recently. Encourage them to start writing!</p>
+							<button
+								onclick={openAddFriendModal}
+								class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+							>
+								<UserPlus class="h-4 w-4 mr-2" />
+								Add More Friends
+							</button>
+						{/if}
 					</div>
 				{:else}
 					{#each data.socialFeed as post}
