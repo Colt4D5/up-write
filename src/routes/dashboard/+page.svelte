@@ -45,13 +45,18 @@
 					class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 scale-in"
 				/>
 				<div>
-					<h1 class="text-2xl font-bold text-gray-900">Welcome back, {data.user?.username}!</h1>
-					<p class="text-gray-600 mt-1">Ready to continue your writing journey?</p>
+					{#if data.isFirstTimeUser}
+						<h1 class="text-2xl font-bold text-gray-900">Welcome to WriterBuddy, {data.user?.username}!</h1>
+						<p class="text-gray-600 mt-1">Let's get you started on your writing journey!</p>
+					{:else}
+						<h1 class="text-2xl font-bold text-gray-900">Welcome back, {data.user?.username}!</h1>
+						<p class="text-gray-600 mt-1">Ready to continue your writing journey?</p>
+					{/if}
 				</div>
 			</div>
 			<a href="/projects/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 flex items-center space-x-2 hover-lift">
 				<PlusCircle class="h-4 w-4" />
-				<span>New Project</span>
+				<span>{data.isFirstTimeUser ? 'Create Your First Project' : 'New Project'}</span>
 			</a>
 		</div>
 	</div>
@@ -168,11 +173,19 @@
 				{:else}
 					<div class="text-center py-8">
 						<BookOpen class="h-12 w-12 text-gray-300 mx-auto mb-4" />
-						<p class="text-gray-500">No projects yet. Create your first project to get started!</p>
-						<a href="/projects/new" class="mt-2 inline-flex items-center text-blue-600 hover:text-blue-800">
-							<PlusCircle class="h-4 w-4 mr-1" />
-							Create Project
-						</a>
+						{#if data.isFirstTimeUser}
+							<p class="text-gray-500">Welcome to WriterBuddy! Create your first project to begin your writing adventure.</p>
+							<a href="/projects/new" class="mt-2 inline-flex items-center text-blue-600 hover:text-blue-800">
+								<PlusCircle class="h-4 w-4 mr-1" />
+								Create Your First Project
+							</a>
+						{:else}
+							<p class="text-gray-500">No projects yet. Create your first project to get started!</p>
+							<a href="/projects/new" class="mt-2 inline-flex items-center text-blue-600 hover:text-blue-800">
+								<PlusCircle class="h-4 w-4 mr-1" />
+								Create Project
+							</a>
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -191,8 +204,13 @@
 					<a href="/projects/new" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors hover-lift">
 						<PlusCircle class="h-5 w-5 text-blue-600 mr-3" />
 						<div>
-							<h3 class="font-medium text-gray-900">Start New Project</h3>
-							<p class="text-sm text-gray-500">Begin writing your next masterpiece</p>
+							{#if data.isFirstTimeUser}
+								<h3 class="font-medium text-gray-900">Create Your First Project</h3>
+								<p class="text-sm text-gray-500">Start your writing adventure with your first project</p>
+							{:else}
+								<h3 class="font-medium text-gray-900">Start New Project</h3>
+								<p class="text-sm text-gray-500">Begin writing your next masterpiece</p>
+							{/if}
 						</div>
 					</a>
 

@@ -23,11 +23,20 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 			activityData = generateSampleActivityData();
 		}
 
+		// Determine if this is a new user (created within last 24 hours and has no projects or writing activity)
+		const userCreatedAt = new Date(locals.user.createdAt);
+		const now = new Date();
+		const timeSinceCreation = now.getTime() - userCreatedAt.getTime();
+		const isNewAccount = timeSinceCreation < 24 * 60 * 60 * 1000; // Less than 24 hours old
+		const hasNoActivity = recentProjects.length === 0 && (stats?.totalWords || 0) === 0;
+		const isFirstTimeUser = isNewAccount && hasNoActivity;
+
 		return {
 			user: locals.user,
 			recentProjects: recentProjects.slice(0, 5),
 			stats,
-			activityData
+			activityData,
+			isFirstTimeUser
 		};
 	} catch (error) {
 		console.error('Dashboard load error:', error);
@@ -40,7 +49,8 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 				totalTime: 0,
 				weeklyWords: 0
 			},
-			activityData: generateSampleActivityData() // Use sample data on error too
+			activityData: generateSampleActivityData(), // Use sample data on error too
+			isFirstTimeUser: false
 		};
 	}
 };
