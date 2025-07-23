@@ -42,9 +42,12 @@
 
 	// Close profile menu when clicking outside
 	function handleOutsideClick(event: MouseEvent) {
-		if (showProfileMenu && !event.target?.closest('[data-profile-menu]')) {
-			showProfileMenu = false;
-		}
+    if (
+      showProfileMenu &&
+      !(event.target instanceof Element && event.target.closest('[data-profile-menu]'))
+    ) {
+      showProfileMenu = false;
+    }
 	}
 
 	// Add event listener when component mounts
