@@ -222,11 +222,23 @@
                     <span>View Profile</span>
                   </a>
                   
-                  <form method="POST" action="/logout" use:enhance>
+                  <form 
+                    method="POST" 
+                    action="/logout" 
+                    use:enhance={() => {
+                      showProfileMenu = false;
+                      return async ({ result, update }) => {
+                        if (result.type === 'redirect') {
+                          await update();
+                        } else {
+                          await update();
+                        }
+                      };
+                    }}
+                  >
                     <button 
                       type="submit"
                       class="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
-                      onclick={() => showProfileMenu = false}
                     >
                       <LogOut class="h-4 w-4" />
                       <span>Sign Out</span>
