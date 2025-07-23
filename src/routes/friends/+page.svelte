@@ -367,9 +367,18 @@
 										</h3>
 										<p class="text-sm text-gray-500">@{friend.username}</p>
 										<div class="flex items-center mt-1">
-											<div class="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
+											{#if friend.friendshipStatus === 'dnd'}
+												<!-- Do Not Disturb - Red filled circle -->
+												<div class="h-2 w-2 bg-red-400 rounded-full mr-2"></div>
+											{:else if friend.isOnline}
+												<!-- Online - Green filled circle -->
+												<div class="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
+											{:else}
+												<!-- Offline - Empty gray circle -->
+												<div class="h-2 w-2 border border-gray-300 rounded-full mr-2"></div>
+											{/if}
 											<span class="text-xs text-gray-500">
-												{friend.isOnline ? 'Online' : 'Offline'}
+												{friend.friendshipStatus === 'dnd' ? 'Do Not Disturb' : (friend.isOnline ? 'Online' : 'Offline')}
 											</span>
 										</div>
 									</div>
