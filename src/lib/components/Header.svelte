@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { BookOpen, PenTool, User, Settings, Home, LogOut, Users, Crown } from 'lucide-svelte';
+	import { BookOpen, PenTool, User, Settings, Home, LogOut, Users, Crown, BarChart3 } from 'lucide-svelte';
 	import { enhance } from '$app/forms';
 	import SubscriptionModal from './SubscriptionModal.svelte';
 
@@ -66,6 +66,10 @@
           <a href="/projects" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 hover-lift">
             <BookOpen class="h-4 w-4" />
             <span>Projects</span>
+          </a>
+          <a href="/analytics" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 hover-lift">
+            <BarChart3 class="h-4 w-4" />
+            <span>Analytics</span>
           </a>
           <a href="/friends" class="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200 hover-lift">
             <Users class="h-4 w-4" />

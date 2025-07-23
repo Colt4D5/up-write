@@ -2,6 +2,7 @@
 	import { BookOpen, PlusCircle, BarChart3, Clock, Target, TrendingUp } from 'lucide-svelte';
 	import { fly } from 'svelte/transition';
 	import { formatWordCount, formatDate } from '$lib/utils';
+	import ActivityGrid from '$lib/components/ActivityGrid.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -124,12 +125,20 @@
 		</div>
 	</div>
 
+	<!-- Activity Grid -->
+	<div 
+		class="bg-white rounded-lg shadow p-6 hover-lift"
+		in:fly={{ y: 20, duration: 400, delay: 350 }}
+	>
+		<ActivityGrid activityData={data.activityData} />
+	</div>
+
 	<!-- Recent Projects and Quick Actions -->
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 			<!-- Recent Projects -->
 			<div 
 				class="bg-white rounded-lg shadow hover-lift"
-				in:fly={{ y: 20, duration: 400, delay: 350 }}
+				in:fly={{ y: 20, duration: 400, delay: 400 }}
 			>
 				<div class="p-6 border-b border-gray-200">
 					<div class="flex items-center justify-between">
@@ -172,7 +181,7 @@
 		<!-- Quick Actions -->
 		<div 
 			class="bg-white rounded-lg shadow hover-lift"
-			in:fly={{ y: 20, duration: 400, delay: 400 }}
+			in:fly={{ y: 20, duration: 400, delay: 450 }}
 		>
 			<div class="p-6 border-b border-gray-200">
 				<h2 class="text-lg font-semibold text-gray-900">Quick Actions</h2>
@@ -212,7 +221,7 @@
 	<!-- Writing Tips -->
 	<div 
 		class="bg-white rounded-lg shadow hover-lift"
-		in:fly={{ y: 20, duration: 400, delay: 450 }}
+		in:fly={{ y: 20, duration: 400, delay: 500 }}
 	>
 		<div class="p-6 border-b border-gray-200">
 			<h2 class="text-lg font-semibold text-gray-900">Today's Writing Tip</h2>

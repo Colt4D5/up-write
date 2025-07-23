@@ -328,6 +328,47 @@ export class StatisticsService {
 		}
 	}
 
+	static async getUserActivityData(userId: string) {
+		try {
+			// Get the last 365 days of writing statistics
+			const oneYearAgo = new Date();
+			oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+			const yearStart = oneYearAgo.toISOString().split('T')[0];
+
+			const activityStats = await db.select({
+				date: writingStatistic.date,
+				wordsWritten: writingStatistic.wordsWritten,
+				sessionsCount: writingStatistic.sessionsCount
+			})
+			.from(writingStatistic)
+			.where(
+				and(
+					eq(writingStatistic.userId, userId),
+					// Note: SQLite string comparison works for YYYY-MM-DD format
+					// This will get all dates >= yearStart
+				)
+			)
+			.orderBy(writingStatistic.date);
+
+			// Group by date and sum up words/sessions across all projects for each day
+			const dailyActivity = new Map();
+			
+			for (const stat of activityStats) {
+				if (stat.date >= yearStart) {
+					const existing = dailyActivity.get(stat.date) || { date: stat.date, words: 0, sessions: 0 };
+					existing.words += stat.wordsWritten;
+					existing.sessions += stat.sessionsCount;
+					dailyActivity.set(stat.date, existing);
+				}
+			}
+
+			return Array.from(dailyActivity.values()).sort((a, b) => a.date.localeCompare(b.date));
+		} catch (error) {
+			console.error('Error in getUserActivityData:', error);
+			return [];
+		}
+	}
+
 	static async recordWritingSession(userId: string, projectId: string, wordsWritten: number, timeSpent: number) {
 		const today = new Date().toISOString().split('T')[0];
 		
