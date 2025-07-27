@@ -38,17 +38,19 @@ A comprehensive writing application for authors to organize and write books with
 
 - **Frontend**: SvelteKit 5 with TypeScript
 - **Styling**: Tailwind CSS 4
-- **Database**: SQLite with Drizzle ORM
+- **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: Lucia Auth
 - **Rich Text Editor**: TipTap
 - **AI Integration**: OpenAI GPT-4
 - **Icons**: Lucide Svelte
+- **Deployment**: Docker with Docker Compose
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js (v18 or higher)
 - pnpm (recommended) or npm
+- Docker and Docker Compose (for local database or deployment)
 
 ### Installation
 
@@ -63,14 +65,20 @@ A comprehensive writing application for authors to organize and write books with
    cp .env.example .env
    ```
    
-   Edit `.env` and add your OpenAI API key:
+   Edit `.env` and add your configuration:
    ```
+   DATABASE_URL="postgresql://writer_buddy_user:secure_password_123@localhost:5432/writer_buddy"
    OPENAI_API_KEY="your-openai-api-key-here"
    ```
 
-3. **Initialize the database**:
+3. **Start the database**:
    ```bash
-   pnpm db:push --force
+   docker compose up -d postgres
+   ```
+
+4. **Run database migrations**:
+   ```bash
+   pnpm db:migrate
    ```
 
 4. **Start the development server**:
@@ -79,6 +87,106 @@ A comprehensive writing application for authors to organize and write books with
    ```
 
 5. **Open your browser** and navigate to `http://localhost:5173`
+
+## Production Deployment
+
+### Docker Deployment (Recommended)
+
+1. **Build the application**:
+   ```bash
+   docker compose build
+   ```
+
+2. **Set up production environment**:
+   ```bash
+   cp .env.example .env.production
+   ```
+   
+   Edit `.env.production` with production values:
+   ```
+   DATABASE_URL="postgresql://writer_buddy_user:your_secure_production_password@postgres:5432/writer_buddy"
+   POSTGRES_PASSWORD="your_secure_production_password"
+   OPENAI_API_KEY="your-openai-api-key-here"
+   NODE_ENV="production"
+   ```
+
+3. **Deploy with Docker Compose**:
+   ```bash
+   # Start all services
+   docker compose -f docker-compose.prod.yml up -d
+   
+   # Run database migrations
+   docker compose -f docker-compose.prod.yml exec app npm run db:migrate
+   ```
+
+4. **Application will be available at `http://localhost:3000`**
+
+### Production Docker Compose Configuration
+
+Create `docker-compose.prod.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: writer_buddy
+      POSTGRES_USER: writer_buddy_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U writer_buddy_user -d writer_buddy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://writer_buddy_user:${POSTGRES_PASSWORD}@postgres:5432/writer_buddy
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
+```
+
+### Deployment Commands
+
+```bash
+# Build and start services
+docker compose -f docker-compose.prod.yml up -d --build
+
+# View logs
+docker compose -f docker-compose.prod.yml logs -f
+
+# Run migrations
+docker compose -f docker-compose.prod.yml exec app npm run db:migrate
+
+# Stop services
+docker compose -f docker-compose.prod.yml down
+
+# Backup database
+docker compose -f docker-compose.prod.yml exec postgres \
+  pg_dump -U writer_buddy_user writer_buddy > backup.sql
+```
 
 ### First Time Setup
 
@@ -118,7 +226,7 @@ src/
 
 ## Database Schema
 
-The application uses SQLite with the following main tables:
+The application uses PostgreSQL with the following main tables:
 
 - **users**: User accounts and profiles
 - **projects**: Writing projects with metadata
@@ -180,8 +288,30 @@ Built on TipTap, the editor provides:
 - `pnpm preview`: Preview production build
 - `pnpm lint`: Run ESLint
 - `pnpm format`: Format code with Prettier
+- `pnpm db:migrate`: Run database migrations
 - `pnpm db:push`: Push database schema changes
 - `pnpm db:studio`: Open Drizzle Studio for database management
+
+### Database Management
+
+- **Local development**: Uses Docker PostgreSQL container
+- **Migrations**: Managed by Drizzle ORM in `/migrations` directory
+- **Schema**: Defined in `/src/lib/server/db/schema.ts`
+- **Backup**: Use `pg_dump` for PostgreSQL backups
+
+### Docker Commands
+
+```bash
+# Development
+docker compose up -d              # Start PostgreSQL only
+docker compose down               # Stop all services
+docker compose logs postgres -f   # View database logs
+
+# Production
+docker compose -f docker-compose.prod.yml up -d    # Start all services
+docker compose -f docker-compose.prod.yml down     # Stop all services
+docker compose -f docker-compose.prod.yml build    # Rebuild images
+```
 
 ### Features To Come
 
