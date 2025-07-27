@@ -21,12 +21,49 @@
 	} from 'lucide-svelte';
 	import { debounce } from '$lib/utils';
 	import { WritingSessionTracker } from '$lib/writing-session-tracker';
+	import { Mark, mergeAttributes } from '@tiptap/core';
+	import { hybridAnalysis, hasSignificantChange } from '$lib/utils/localAnalysis';
+
+	// Custom suggestion mark extension
+	const SuggestionMark = Mark.create({
+		name: 'suggestionMark',
+		
+		addOptions() {
+			return {
+				HTMLAttributes: {},
+			}
+		},
+
+		parseHTML() {
+			return [
+				{
+					tag: 'span[data-suggestion-index]',
+				},
+			]
+		},
+
+		renderHTML({ HTMLAttributes }) {
+			return ['span', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
+		},
+
+		addAttributes() {
+			return {
+				class: {
+					default: null,
+				},
+				'data-suggestion-index': {
+					default: null,
+				},
+			}
+		},
+	});
 
 	interface Props {
 		content?: string;
 		placeholder?: string;
 		onUpdate?: (content: string) => void;
 		onAnalyze?: (content: string) => void;
+		onInlineAnalyze?: (content: string) => Promise<any>; // For inline AI suggestions
 		readonly?: boolean;
 		class?: string;
 		projectId?: string; // Add project ID for session tracking
@@ -37,6 +74,7 @@
 		placeholder = 'Start writing...',
 		onUpdate,
 		onAnalyze,
+		onInlineAnalyze,
 		readonly = false,
 		class: className = '',
 		projectId
@@ -47,6 +85,19 @@
 	let showSuggestions = $state(false);
 	let isAnalyzing = $state(false);
 	let sessionTracker: WritingSessionTracker | null = $state(null);
+	
+	// Inline suggestions state
+	let inlineSuggestions = $state<Array<{
+		from: number;
+		to: number;
+		text: string;
+		suggestion: string;
+		type: 'grammar' | 'style' | 'clarity';
+	}>>([]);
+	let isInlineAnalyzing = $state(false);
+	let hoveredSuggestion = $state<number | null>(null);
+	let tooltipPosition = $state<{ x: number; y: number } | null>(null);
+	let lastAnalyzedContent = $state('');
 	
 	// Reactive counters that update when editor content changes
 	let characterCount = $state(0);
@@ -61,8 +112,140 @@
 		}
 	}, 2000) : null;
 
+	// Debounced inline analysis
+	const debouncedInlineAnalyze = onInlineAnalyze ? debounce(async (content: string) => {
+		if (content.trim().length > 20) {
+			isInlineAnalyzing = true;
+			try {
+				const suggestions = await onInlineAnalyze(content);
+				inlineSuggestions = suggestions || [];
+				applyInlineSuggestions();
+			} catch (error) {
+				console.error('Inline analysis failed:', error);
+			} finally {
+				isInlineAnalyzing = false;
+			}
+		}
+	}, 3000) : null;
+
+	// Default inline analysis function that calls the API
+	const defaultInlineAnalyze = async (text: string) => {
+		try {
+			const response = await fetch('/api/ai/inline-suggestions', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ text }),
+			});
+
+			if (response.ok) {
+				return await response.json();
+			}
+			return [];
+		} catch (error) {
+			console.error('Inline analysis error:', error);
+			return [];
+		}
+	};
+
+	// Use provided inline analyze function or default
+	const inlineAnalyzeFunction = onInlineAnalyze || defaultInlineAnalyze;
+
+	// Create debounced version that uses hybrid analysis for cost efficiency
+	const debouncedInlineAnalyzeActual = debounce(async (content: string) => {
+		if (content.trim().length > 20) {
+			// Smart analysis - only analyze if significant changes using our utility function
+			if (!hasSignificantChange(lastAnalyzedContent, content)) {
+				return; // Skip if changes aren't significant enough
+			}
+			
+			isInlineAnalyzing = true;
+			try {
+				// Use hybrid analysis: local patterns first, then AI only if needed
+				const suggestions = await hybridAnalysis(content, onInlineAnalyze);
+				inlineSuggestions = suggestions || [];
+				lastAnalyzedContent = content;
+				applyInlineSuggestions();
+			} catch (error) {
+				console.error('Hybrid analysis failed:', error);
+			} finally {
+				isInlineAnalyzing = false;
+			}
+		}
+	}, 5000); // Increased to 5 seconds for better cost efficiency
+
 	// Track the last content we set to prevent loops
 	let lastSetContent = $state('');
+
+	// Function to apply inline suggestions as decorations
+	function applyInlineSuggestions() {
+		if (!editor || !inlineSuggestions.length) return;
+		
+		// We'll need to add class names to spans in the HTML
+		// For now, let's just update the DOM directly as a workaround
+		setTimeout(() => {
+			const editorElement = editor?.view.dom;
+			if (!editorElement) return;
+
+			// Remove existing suggestion marks
+			const existingMarks = editorElement.querySelectorAll('.suggestion-grammar, .suggestion-style, .suggestion-clarity');
+			existingMarks.forEach(mark => {
+				const parent = mark.parentNode;
+				if (parent) {
+					parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
+				}
+			});
+
+			// Apply new suggestions by wrapping text in spans
+			const textContent = editor?.getText() || '';
+			let htmlContent = editor?.getHTML() || '';
+
+			inlineSuggestions.forEach((suggestion, index) => {
+				const beforeText = textContent.substring(0, suggestion.from);
+				const suggestionText = textContent.substring(suggestion.from, suggestion.to);
+				const afterText = textContent.substring(suggestion.to);
+
+				// Create a span with the appropriate class and data attribute
+				const spanClass = `suggestion-${suggestion.type}`;
+				const spanElement = `<span class="${spanClass}" data-suggestion-index="${index}">${suggestionText}</span>`;
+				
+				// Replace the text in HTML (this is a simplified approach)
+				const regex = new RegExp(escapeRegExp(suggestionText), 'g');
+				htmlContent = htmlContent.replace(regex, spanElement);
+			});
+
+			// Update editor content without triggering onUpdate
+			if (htmlContent !== editor?.getHTML()) {
+				editor?.commands.setContent(htmlContent, { emitUpdate: false });
+			}
+		}, 50);
+	}
+
+	// Helper function to escape regex special characters
+	function escapeRegExp(string: string) {
+		return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	// Function to handle suggestion hover
+	function handleSuggestionHover(event: MouseEvent, suggestionIndex: number) {
+		hoveredSuggestion = suggestionIndex;
+		tooltipPosition = { x: event.clientX, y: event.clientY };
+	}
+
+	// Function to apply a suggestion
+	function applySuggestion(suggestionIndex: number) {
+		if (!editor || !inlineSuggestions[suggestionIndex]) return;
+		
+		const suggestion = inlineSuggestions[suggestionIndex];
+		editor.commands.setTextSelection({ from: suggestion.from, to: suggestion.to });
+		editor.commands.insertContent(suggestion.suggestion);
+		
+		// Remove the applied suggestion
+		inlineSuggestions = inlineSuggestions.filter((_, index) => index !== suggestionIndex);
+		hoveredSuggestion = null;
+		tooltipPosition = null;
+	}
 
 	onMount(() => {
 		// Initialize session tracker if projectId is provided
@@ -84,7 +267,8 @@
 				Highlight.configure({
 					multicolor: true
 				}),
-				CharacterCount
+				CharacterCount,
+				SuggestionMark
 			],
 			content: content || '', // Ensure content is never undefined
 			editable: !readonly,
@@ -124,6 +308,11 @@
 				if (debouncedAnalyze && text.trim().length > 50) {
 					debouncedAnalyze(text);
 				}
+
+				// Trigger inline analysis
+				if (text.trim().length > 20) {
+					debouncedInlineAnalyzeActual(text);
+				}
 			},
 			onFocus: () => {
 				// Start session when editor gets focus (if not already started)
@@ -145,6 +334,35 @@
 			characterCount = text.length;
 			wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
 		}
+
+		// Add event listeners for suggestion interactions
+		const editorElement = editor.view.dom;
+		
+		editorElement.addEventListener('mouseover', (event) => {
+			const target = event.target as HTMLElement;
+			const suggestionIndex = target.getAttribute('data-suggestion-index');
+			if (suggestionIndex !== null) {
+				handleSuggestionHover(event as MouseEvent, parseInt(suggestionIndex));
+			}
+		});
+
+		editorElement.addEventListener('mouseout', (event) => {
+			const target = event.target as HTMLElement;
+			const suggestionIndex = target.getAttribute('data-suggestion-index');
+			if (suggestionIndex !== null) {
+				hoveredSuggestion = null;
+				tooltipPosition = null;
+			}
+		});
+
+		editorElement.addEventListener('click', (event) => {
+			const target = event.target as HTMLElement;
+			const suggestionIndex = target.getAttribute('data-suggestion-index');
+			if (suggestionIndex !== null) {
+				event.preventDefault();
+				handleSuggestionHover(event as MouseEvent, parseInt(suggestionIndex));
+			}
+		});
 	});
 
 	onDestroy(() => {
@@ -382,9 +600,47 @@
 					<span>Analyzing your writing...</span>
 				</div>
 			{/if}
+			{#if isInlineAnalyzing}
+				<div class="flex items-center space-x-1 text-green-600">
+					<div class="animate-pulse h-2 w-2 bg-green-600 rounded-full"></div>
+					<span>Checking for suggestions...</span>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
+
+<!-- Inline Suggestion Tooltip -->
+{#if hoveredSuggestion !== null && tooltipPosition && inlineSuggestions[hoveredSuggestion]}
+	<div 
+		class="fixed z-50 bg-white border border-gray-300 rounded-lg shadow-lg p-3 max-w-xs"
+		style="left: {tooltipPosition.x}px; top: {tooltipPosition.y - 10}px; transform: translateY(-100%);"
+	>
+		<div class="text-sm">
+			<div class="font-medium text-gray-800 mb-1">
+				{inlineSuggestions[hoveredSuggestion].type === 'grammar' ? '📝' : 
+				 inlineSuggestions[hoveredSuggestion].type === 'style' ? '✨' : '💡'} 
+				{inlineSuggestions[hoveredSuggestion].type === 'grammar' ? 'Grammar' : 
+				 inlineSuggestions[hoveredSuggestion].type === 'style' ? 'Style' : 'Clarity'}
+			</div>
+			<div class="text-gray-600 mb-2">
+				{inlineSuggestions[hoveredSuggestion].suggestion}
+			</div>
+			<button
+				onclick={() => applySuggestion(hoveredSuggestion!)}
+				class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+			>
+				Apply
+			</button>
+			<button
+				onclick={() => { hoveredSuggestion = null; tooltipPosition = null; }}
+				class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300 ml-1"
+			>
+				Dismiss
+			</button>
+		</div>
+	</div>
+{/if}
 
 <style>
 	:global(.ProseMirror) {
@@ -431,5 +687,38 @@
 		font-weight: bold;
 		margin-top: 1rem;
 		margin-bottom: 0.5rem;
+	}
+
+	:global(.ProseMirror p) {
+		margin-bottom: 1rem;
+	}
+
+	:global(.ProseMirror p:last-child) {
+		margin-bottom: 0;
+	}
+
+	/* Inline suggestion styles */
+	:global(.suggestion-grammar) {
+		border-bottom: 2px dotted #ef4444;
+		cursor: pointer;
+		position: relative;
+	}
+
+	:global(.suggestion-style) {
+		border-bottom: 2px dotted #f59e0b;
+		cursor: pointer;
+		position: relative;
+	}
+
+	:global(.suggestion-clarity) {
+		border-bottom: 2px dotted #3b82f6;
+		cursor: pointer;
+		position: relative;
+	}
+
+	:global(.suggestion-grammar:hover),
+	:global(.suggestion-style:hover),
+	:global(.suggestion-clarity:hover) {
+		background-color: rgba(0, 0, 0, 0.05);
 	}
 </style>

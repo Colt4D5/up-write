@@ -50,7 +50,7 @@
 
 	<!-- Main Content with Advanced Page Transitions -->
 	<main
-		class="w-full mx-auto flex-1 relative overflow-hidden
+		class="w-full mx-auto flex-1 relative
 			{data.user && !validPathnames.includes(page.url.pathname)
 				? 'max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8'
 				: ''}"

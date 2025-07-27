@@ -22,6 +22,10 @@ export const load: PageServerLoad = async (event) => {
 			displayName: table.user.displayName,
 			birthday: table.user.birthday,
 			profileImage: table.user.profileImage,
+			subscriptionTier: table.user.subscriptionTier,
+			subscriptionStatus: table.user.subscriptionStatus,
+			subscriptionExpiresAt: table.user.subscriptionExpiresAt,
+			aiAccessEnabled: table.user.aiAccessEnabled,
 			createdAt: table.user.createdAt
 		})
 		.from(table.user)

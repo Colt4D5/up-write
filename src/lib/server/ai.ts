@@ -57,7 +57,7 @@ export class AiWritingService {
 
 		try {
 			const completion = await openai.chat.completions.create({
-				model: 'gpt-4',
+				model: 'gpt-4o-mini',
 				messages: [
 					{
 						role: 'system',
@@ -114,7 +114,26 @@ Focus on actionable, specific feedback that will help the author improve their w
 				throw new Error('No response from OpenAI');
 			}
 
-			return JSON.parse(result) as AiAnalysisResult;
+			// More robust markdown code block stripping
+			let cleanedResult = result.trim();
+			
+			// Remove opening markdown blocks (various formats)
+			cleanedResult = cleanedResult.replace(/^```(?:json)?\s*/i, '');
+			
+			// Remove closing markdown blocks
+			cleanedResult = cleanedResult.replace(/\s*```\s*$/i, '');
+			
+			// Remove any remaining backticks at start/end
+			cleanedResult = cleanedResult.replace(/^`+|`+$/g, '').trim();
+
+			try {
+				return JSON.parse(cleanedResult) as AiAnalysisResult;
+			} catch (parseError) {
+				console.error('JSON parse error:', parseError);
+				console.error('Raw OpenAI response:', result);
+				console.error('Cleaned response:', cleanedResult);
+				throw new Error('Failed to parse AI response as JSON');
+			}
 		} catch (error) {
 			console.error('AI analysis error:', error);
 			
@@ -132,7 +151,7 @@ Focus on actionable, specific feedback that will help the author improve their w
 
 		try {
 			const completion = await openai.chat.completions.create({
-				model: 'gpt-4',
+				model: 'gpt-4o-mini',
 				messages: [
 					{
 						role: 'system',

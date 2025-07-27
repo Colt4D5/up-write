@@ -3,6 +3,7 @@
 	import { fly } from 'svelte/transition';
 	import { formatWordCount } from '$lib/utils';
 	import ActivityGrid from '$lib/components/ActivityGrid.svelte';
+	import AiUsageMonitor from '$lib/components/AiUsageMonitor.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -231,4 +232,15 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- AI Usage & Cost Monitoring -->
+	{#if data.user?.subscriptionTier !== 'free'}
+		<div 
+			class="bg-white rounded-lg shadow p-6 hover-lift"
+			in:fly={{ y: 20, duration: 400, delay: 500 }}
+		>
+			<h2 class="text-lg font-semibold text-gray-900 mb-4">AI Usage & Cost Optimization</h2>
+			<AiUsageMonitor />
+		</div>
+	{/if}
 </div>

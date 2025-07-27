@@ -3,6 +3,7 @@
 	import { User, Mail, Hash, Calendar, Save, AlertCircle, CheckCircle, Lock, Eye, EyeOff, Camera, Cake, Crown, Zap, X, BarChart3, Home, BookOpen } from 'lucide-svelte';
 	import { calculateAge, formatBirthday } from '$lib/utils';
 	import SubscriptionModal from '$lib/components/SubscriptionModal.svelte';
+	import AiUsageMonitor from '$lib/components/AiUsageMonitor.svelte';
 	import type { PageServerData, ActionData } from './$types';
 
 	let { data, form }: { 
@@ -451,6 +452,19 @@
 			{/if}
 		</div>
 	</div>
+
+	<!-- AI Usage Monitor Section -->
+	{#if data?.user?.subscriptionTier !== 'free'}
+		<div class="mt-8 bg-white shadow-lg rounded-lg">
+			<div class="p-6 border-b border-gray-200">
+				<h2 class="text-xl font-semibold text-gray-900">AI Usage & Costs</h2>
+				<p class="text-sm text-gray-600 mt-1">Monitor your AI writing assistant usage and optimize costs.</p>
+			</div>
+			<div class="p-6">
+				<AiUsageMonitor />
+			</div>
+		</div>
+	{/if}
 
 	<!-- Password Change Section -->
 	<div class="mt-8 bg-white shadow-lg rounded-lg">
