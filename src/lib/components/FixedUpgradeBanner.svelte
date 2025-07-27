@@ -2,7 +2,11 @@
 	import { Crown, X, Check, ArrowRight } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 
-	let { userTier, onUpgrade }: { userTier: string; onUpgrade?: () => void } = $props();
+	let { userTier, onUpgrade, onDismiss }: { 
+		userTier: string; 
+		onUpgrade?: () => void;
+		onDismiss?: () => void;
+	} = $props();
 	
 	let showBanner = $state(false);
 	let isVisible = $state(false);
@@ -54,6 +58,10 @@
 			showBanner = false;
 			// Store dismissal timestamp
 			localStorage.setItem(DISMISSAL_KEY, Date.now().toString());
+			// Call the onDismiss callback if provided
+			if (onDismiss) {
+				onDismiss();
+			}
 		}, 300);
 	}
 

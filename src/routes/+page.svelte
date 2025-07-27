@@ -149,7 +149,7 @@
 </svelte:head>
 
 <!-- Hero Section -->
-<section id="hero" class="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-20 pb-16 overflow-hidden">
+<section id="hero" class="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-24 pb-16 overflow-hidden">
 	<!-- Animated background elements -->
 	<div class="absolute inset-0 overflow-hidden pointer-events-none">
 		<div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl animate-pulse"></div>
