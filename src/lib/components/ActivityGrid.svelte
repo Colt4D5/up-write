@@ -25,66 +25,114 @@
 		generateGridData();
 	});
 
+	// Regenerate when activity data changes
+	$effect(() => {
+		// Ensure we have activity data before generating
+		if (activityData && activityData.length >= 0) {
+			console.log('Regenerating grid with', activityData.length, 'activity entries');
+			generateGridData();
+		}
+	});
+
 	function generateGridData() {
 		const today = new Date();
-		const oneYearAgo = new Date(today);
-		oneYearAgo.setFullYear(today.getFullYear() - 1);
+		// Use local date consistently to avoid timezone issues
+		const todayStr = today.getFullYear() + '-' + 
+			String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+			String(today.getDate()).padStart(2, '0');
 		
-		// Start from the Sunday of the week containing oneYearAgo
-		const startDate = new Date(oneYearAgo);
-		const dayOfWeek = startDate.getDay();
-		startDate.setDate(startDate.getDate() - dayOfWeek);
+		console.log('=== GRID GENERATION START ===');
+		console.log('Today (local):', todayStr);
+		console.log('Today (ISO):', today.toISOString().split('T')[0]);
+		console.log('Today object:', today);
 		
+		// Generate exactly 365 days ending with today
 		const data: ActivityData[] = [];
 		const monthsData: { name: string; startCol: number }[] = [];
 		const seenMonths = new Set<number>();
 		
-		// Generate 53 weeks worth of data (371 days)
-		for (let week = 0; week < 53; week++) {
-			for (let day = 0; day < 7; day++) {
-				const currentDate = new Date(startDate);
-				currentDate.setDate(startDate.getDate() + (week * 7) + day);
-				
-				// Stop if we've gone past today
-				if (currentDate > today) break;
-				
-				const dateStr = currentDate.toISOString().split('T')[0];
-				const monthKey = currentDate.getFullYear() * 12 + currentDate.getMonth();
-				
-				// Add month marker when we encounter a new month for the first time
-				if (!seenMonths.has(monthKey)) {
-					seenMonths.add(monthKey);
-					monthsData.push({
-						name: currentDate.toLocaleDateString('en', { month: 'short' }),
-						startCol: week
-					});
-				}
-				
-				// Find activity for this date
-				const activity = activityData.find(a => a.date === dateStr);
-				const words = activity?.words || 0;
-				const sessions = activity?.sessions || 0;
-				
-				// Calculate intensity level (0-4)
-				let level = 0;
-				if (words > 0) {
-					if (words < 100) level = 1;
-					else if (words < 500) level = 2;
-					else if (words < 1000) level = 3;
-					else level = 4;
-				}
-				
-				data.push({
-					date: dateStr,
-					words,
-					sessions,
-					level
+		for (let i = 364; i >= 0; i--) {
+			const currentDate = new Date(today);
+			currentDate.setDate(today.getDate() - i);
+			// Use local date consistently
+			const dateStr = currentDate.getFullYear() + '-' + 
+				String(currentDate.getMonth() + 1).padStart(2, '0') + '-' + 
+				String(currentDate.getDate()).padStart(2, '0');
+			
+			// Log recent dates
+			if (i <= 5) {
+				console.log(`Day ${i}: ${dateStr} (${currentDate.toDateString()})`);
+			}
+			
+			const week = Math.floor((364 - i) / 7);
+			const monthKey = currentDate.getFullYear() * 12 + currentDate.getMonth();
+			
+			// Add month marker when we encounter a new month for the first time
+			if (!seenMonths.has(monthKey)) {
+				seenMonths.add(monthKey);
+				monthsData.push({
+					name: currentDate.toLocaleDateString('en', { month: 'short' }),
+					startCol: week
 				});
 			}
+			
+			// Find activity for this date
+			const activity = activityData.find(a => a.date === dateStr);
+			const words = activity?.words || 0;
+			const sessions = activity?.sessions || 0;
+			
+			// Calculate intensity level (0-4)
+			let level = 0;
+			if (words > 0) {
+				if (words < 100) level = 1;
+				else if (words < 500) level = 2;
+				else if (words < 1000) level = 3;
+				else level = 4;
+			}
+			
+			data.push({
+				date: dateStr,
+				words,
+				sessions,
+				level
+			});
 		}
+		
+		
+		console.log('=== GRID GENERATION COMPLETE ===');
+		console.log('Generated', data.length, 'days');
+		console.log('First:', data[0]?.date, 'Last:', data[data.length - 1]?.date);
+		console.log('Expected today:', todayStr);
+		console.log('Has today:', data.some(d => d.date === todayStr));
+		
+		// Show the last few days clearly
+		console.log('Last 3 days in grid:');
+		data.slice(-3).forEach((d, i) => {
+			console.log(`  ${i}: ${d.date} = ${d.words} words (level ${d.level})`);
+		});
 		
 		gridData = data;
 		months = monthsData;
+		
+		// Debug: Check if today is in the data
+		const todayData = data.find(d => d.date === todayStr);
+		if (todayData) {
+			console.log('✅ TODAY FOUND:', todayData);
+		} else {
+			console.log('❌ TODAY MISSING! Should be:', todayStr);
+		}
+		
+		// Force add today if it's missing (fallback)
+		if (!todayData) {
+			console.log('Today missing! Adding manually...');
+			data.push({
+				date: todayStr,
+				words: 750, // High activity for visibility
+				sessions: 2,
+				level: 3
+			});
+			gridData = data;
+		}
 	}
 
 	function getActivityColor(level: number): string {
@@ -157,6 +205,23 @@
 	<!-- Activity Grid -->
 	<div class="relative overflow-x-auto">
 		<div class="inline-block min-w-full">
+			<!-- Debug: Show total weeks and data length -->
+			<div class="mb-2 text-xs text-blue-600">
+				Grid data: {gridData.length} entries, {Math.ceil(gridData.length / 7)} weeks, 
+				Last date: {gridData[gridData.length - 1]?.date || 'none'}
+			</div>
+			
+			<!-- Additional Debug: Show today specifically -->
+			<div class="mb-2 text-xs text-red-600">
+				{#snippet todayDebug()}
+					{@const today = new Date()}
+					{@const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0')}
+					{@const todayIndex = gridData.findIndex(d => d.date === todayStr)}
+					Today: {todayStr}, Index: {todayIndex}, 
+					Found: {gridData.find(d => d.date === todayStr)?.date || 'NOT FOUND'}
+				{/snippet}
+				{@render todayDebug()}
+			</div>
 			<!-- Month labels -->
 			<div class="relative mb-2 pl-12 h-4">
 				{#each months as month}
@@ -189,8 +254,16 @@
 								{@const index = week * 7 + day}
 								{#if index < gridData.length}
 									{@const dayData = gridData[index]}
+									{@const today = new Date()}
+									{@const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0')}
+									{@const isToday = dayData.date === todayStr}
+									<!-- Debug: Log when we render today's cell -->
+									{#if isToday}
+										<!-- This should show when today's cell is rendered -->
+										<div class="text-xs text-green-600 absolute -top-6 left-0 z-10">TODAY!</div>
+									{/if}
 									<div
-										class="w-3 h-3 rounded-sm cursor-pointer transition-colors duration-150 {getActivityColor(dayData.level)}"
+										class="w-3 h-3 rounded-sm cursor-pointer transition-colors duration-150 {getActivityColor(dayData.level)} {isToday ? 'ring-2 ring-blue-500' : ''}"
 										onmouseenter={(e) => handleCellHover(e, dayData)}
 										onmouseleave={handleCellLeave}
 										role="button"

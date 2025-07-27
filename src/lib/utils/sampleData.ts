@@ -19,12 +19,20 @@ export function generateSampleActivityData() {
 		// Create some streaks and dry spells
 		const streakFactor = Math.sin(i / 30) * 0.5 + 0.5; // Creates waves of activity
 		
+		// Force include today and yesterday for testing
+		const shouldInclude = i <= 1 || (Math.random() < weekdayFactor * streakFactor);
+		
 		// Random chance of activity based on factors
-		if (Math.random() < weekdayFactor * streakFactor) {
+		if (shouldInclude) {
 			// Vary word count based on how active the period is
 			let baseWords = 200;
 			if (streakFactor > 0.7) baseWords = 800; // High activity periods
 			else if (streakFactor > 0.4) baseWords = 500; // Medium activity
+			
+			// Ensure today and yesterday have some activity
+			if (i <= 1) {
+				baseWords = i === 0 ? 1500 : 500; // Today gets high activity, yesterday gets medium
+			}
 			
 			const words = Math.floor(baseWords + (Math.random() * baseWords * 0.5));
 			const sessions = Math.floor(Math.random() * 2) + 1; // 1-3 sessions
