@@ -171,9 +171,10 @@
 
 				<div class="space-y-4">
 					{#each privacyOptions as option}
+						{@const IconComponent = getIcon(option.icon)}
 						<div class="flex items-start space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
 							<div class="flex-shrink-0 mt-0.5">
-								<svelte:component this={getIcon(option.icon)} class="h-5 w-5 text-gray-600" />
+								<IconComponent class="h-5 w-5 text-gray-600" />
 							</div>
 							<div class="flex-1 min-w-0">
 								<div class="flex items-start justify-between">
